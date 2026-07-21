@@ -145,7 +145,7 @@
             </button>
             <!-- Tombol Export Laporan Khusus Admin -->
             <button id="btnExport" onclick="exportAdminReport()" class="hidden bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-semibold px-3 py-1.5 rounded-lg items-center gap-1.5 transition">
-              <i data-lucide="download" class="w-3.5 h-3.5"></i> Download Laporan (.txt)
+              <i data-lucide="download" class="w-3.5 h-3.5"></i> Download Laporan
             </button>
           </div>
         </div>
@@ -235,8 +235,8 @@
       </div>
       <form onsubmit="handleSaveUser(event)" class="p-5 space-y-4">
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Kamu *</label>
-          <input type="text" id="inputUserName" required placeholder="misal: Yusuf" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Kamu</label>
+          <input type="text" id="inputUserName" required placeholder="misal: Rakha Radlurahman" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-2">Pilih Peran / Hak Akses *</label>
@@ -246,7 +246,7 @@
                 <span class="font-bold text-xs text-slate-900">PIC / Admin</span>
                 <i data-lucide="shield-check" class="w-4 h-4 text-amber-600"></i>
               </div>
-              <p class="text-[10px] text-slate-500 leading-tight">Berhak Mengontrol Opsi.</p>
+              <p class="text-[10px] text-slate-500 leading-tight">Berhak Mengontrol Secara Keseluruhan.</p>
             </div>
             <div id="roleCardMember" onclick="selectRoleOption('member')" class="cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-slate-200 bg-white hover:border-slate-300">
               <div class="flex items-center justify-between mb-1">
@@ -332,7 +332,7 @@
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Kontak Vendor/Pemilik (WA)</label>
-            <input type="text" id="itemContact" placeholder="misal: Pak Joko (08123...)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
+            <input type="text" id="itemContact" placeholder="misal: Pak Ali (08123...)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
           </div>
         </div>
         <div class="pt-2 flex gap-2">
@@ -390,7 +390,7 @@
 
     let items = [];
     let logs = JSON.parse(localStorage.getItem('ipm_logistic_logs')) || [
-      { time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), text: 'IPM Event Logistic system diinisialisasi.' }
+      { time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), text: 'IPM Event Logistic system Loaded.' }
     ];
 
     let currentFilter = 'all';
