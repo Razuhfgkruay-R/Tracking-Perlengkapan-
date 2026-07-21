@@ -1,6 +1,6 @@
 {
   "name": "IPM Event Logistic",
-  "short_name": "IPM Logistic",
+  "short_name": "Event Logistic Monitor",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#FFCB05",
