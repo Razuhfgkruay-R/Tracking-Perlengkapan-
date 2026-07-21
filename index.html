@@ -68,7 +68,7 @@
         <div class="flex items-center gap-2">
           <div onclick="openUserModal()" class="bg-slate-900 hover:bg-slate-800 text-amber-300 cursor-pointer px-3 py-1.5 rounded-xl text-sm flex items-center gap-2 border border-slate-700 transition shadow-sm">
             <i data-lucide="user-check" class="w-4 h-4 text-amber-300"></i>
-            <span id="currentUserBadge" class="font-bold text-xs sm:text-sm">PIC: Nama PJ</span>
+            <span id="currentUserBadge" class="font-bold text-xs sm:text-sm">Anggota: Petugas</span>
           </div>
         </div>
       </div>
@@ -236,27 +236,27 @@
       <form onsubmit="handleSaveUser(event)" class="p-5 space-y-4">
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Kamu</label>
-          <input type="text" id="inputUserName" required placeholder="misal: Rakha Radlurahman" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
+          <input type="text" id="inputUserName" required placeholder="misal: Petugas Logistik" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-2">Pilih Peran / Hak Akses *</label>
           <div class="grid grid-cols-2 gap-3">
-            <div id="roleCardAdmin" onclick="selectRoleOption('admin')" class="cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-amber-500 bg-amber-50">
+            <div id="roleCardAdmin" onclick="selectRoleOption('admin')" class="cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-slate-200 bg-white hover:border-slate-300">
               <div class="flex items-center justify-between mb-1">
-                <span class="font-bold text-xs text-slate-900">PIC / Admin</span>
-                <i data-lucide="shield-check" class="w-4 h-4 text-amber-600"></i>
+                <span class="font-bold text-xs text-slate-700">PIC / Admin</span>
+                <i data-lucide="shield-check" class="w-4 h-4 text-slate-400"></i>
               </div>
               <p class="text-[10px] text-slate-500 leading-tight">Berhak Mengontrol Secara Keseluruhan.</p>
             </div>
-            <div id="roleCardMember" onclick="selectRoleOption('member')" class="cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-slate-200 bg-white hover:border-slate-300">
+            <div id="roleCardMember" onclick="selectRoleOption('member')" class="cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-amber-500 bg-amber-50">
               <div class="flex items-center justify-between mb-1">
-                <span class="font-bold text-xs text-slate-700">Anggota</span>
-                <i data-lucide="user" class="w-4 h-4 text-slate-400"></i>
+                <span class="font-bold text-xs text-slate-900">Anggota</span>
+                <i data-lucide="user" class="w-4 h-4 text-amber-600"></i>
               </div>
               <p class="text-[10px] text-slate-500 leading-tight">Update status & foto barang.</p>
             </div>
           </div>
-          <input type="hidden" id="inputUserRole" value="admin">
+          <input type="hidden" id="inputUserRole" value="member">
         </div>
         <div class="pt-2 flex gap-2">
           <button type="button" onclick="toggleModal('userModal', false)" class="w-1/2 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200">Batal</button>
@@ -385,13 +385,13 @@
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let eventInfo = { name: 'Isi Nama Event', date: 'Tanggal Event' };
-    let userRole = localStorage.getItem('ipm_logistic_role') || 'admin';
-    let currentUserName = localStorage.getItem('ipm_logistic_username') || 'Nama PJ';
+    
+    // DEFAULT ROLE = MEMBER (ANGGOTA) UNTUK PENGGUNA BARU
+    let userRole = localStorage.getItem('ipm_logistic_role') || 'member';
+    let currentUserName = localStorage.getItem('ipm_logistic_username') || 'Petugas IPM';
 
     let items = [];
-    let logs = JSON.parse(localStorage.getItem('ipm_logistic_logs')) || [
-      { time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), text: 'IPM Event Logistic system Loaded.' }
-    ];
+    let logs = [];
 
     let currentFilter = 'all';
     let searchQuery = '';
@@ -412,26 +412,48 @@
 
       updateRoleUI();
       
-      // Ambil data event & item dari Supabase secara paralel
-      await fetchEventConfig();
-      await fetchItemsFromCloud();
+      // Ambil data event, item & logs dari Supabase
+      await fetchAllDataFromCloud();
 
-      // Realtime Listener untuk items
+      // Realtime Listener untuk Items
       supabaseClient
         .channel('public:event_items')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'event_items' }, payload => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'event_items' }, () => {
           fetchItemsFromCloud();
         })
         .subscribe();
 
-      // Realtime Listener untuk event_config
+      // Realtime Listener untuk Logs
+      supabaseClient
+        .channel('public:event_logs')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'event_logs' }, () => {
+          fetchLogsFromCloud();
+        })
+        .subscribe();
+
+      // Realtime Listener untuk Event Config
       supabaseClient
         .channel('public:event_config')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'event_config' }, payload => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'event_config' }, () => {
           fetchEventConfig();
         })
         .subscribe();
+
+      // SMART AUTO-SYNC UNTUK APK / PWA (Setiap kali aplikasi difokuskan kembali)
+      window.addEventListener('focus', fetchAllDataFromCloud);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') fetchAllDataFromCloud();
+      });
+
+      // BACKGROUND POLLING FALLBACK (Setiap 8 detik)
+      setInterval(fetchAllDataFromCloud, 8000);
     });
+
+    async function fetchAllDataFromCloud() {
+      await fetchEventConfig();
+      await fetchItemsFromCloud();
+      await fetchLogsFromCloud();
+    }
 
     async function fetchEventConfig() {
       const { data, error } = await supabaseClient
@@ -455,6 +477,23 @@
       if (!error && data) {
         items = data;
         renderApp();
+      }
+    }
+
+    // MENGAMBIL RIWAYAT LOG DARI SUPABASE CLOUD (REALTIME MULTI-DEVICE)
+    async function fetchLogsFromCloud() {
+      const { data, error } = await supabaseClient
+        .from('event_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(30);
+
+      if (!error && data) {
+        logs = data.map(l => ({
+          time: new Date(l.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+          text: l.text
+        }));
+        renderLogs();
       }
     }
 
@@ -505,13 +544,17 @@
       if (role === 'admin') {
         cardAdmin.className = "cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-amber-500 bg-amber-50";
         cardAdmin.querySelector('span').className = "font-bold text-xs text-slate-900";
+        cardAdmin.querySelector('i').className = "w-4 h-4 text-amber-600";
         cardMember.className = "cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-slate-200 bg-white hover:border-slate-300";
         cardMember.querySelector('span').className = "font-bold text-xs text-slate-700";
+        cardMember.querySelector('i').className = "w-4 h-4 text-slate-400";
       } else {
         cardMember.className = "cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-amber-500 bg-amber-50";
         cardMember.querySelector('span').className = "font-bold text-xs text-slate-900";
+        cardMember.querySelector('i').className = "w-4 h-4 text-amber-600";
         cardAdmin.className = "cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-slate-200 bg-white hover:border-slate-300";
         cardAdmin.querySelector('span').className = "font-bold text-xs text-slate-700";
+        cardAdmin.querySelector('i').className = "w-4 h-4 text-slate-400";
       }
     }
 
@@ -564,12 +607,11 @@
       }
     }
 
-    function addLog(actionText) {
-      const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-      logs.unshift({ time: timeStr, text: `<b>${currentUserName}</b>: ${actionText}` });
-      if(logs.length > 30) logs.pop();
-      localStorage.setItem('ipm_logistic_logs', JSON.stringify(logs));
-      renderLogs();
+    // MENGIRIM LOG ACTIVITI KE SUPABASE CLOUD
+    async function addLog(actionText) {
+      const formattedText = `<b>${currentUserName}</b>: ${actionText}`;
+      await supabaseClient.from('event_logs').insert([{ text: formattedText }]);
+      fetchLogsFromCloud();
     }
 
     // FITUR RESET DATA & LOG ACTIVITY
@@ -581,12 +623,11 @@
       toggleModal('resetModal', true);
     }
 
-    function handleClearLogOnly() {
-      logs = [{ time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), text: `Riwayat aktivitas dibersihkan oleh <b>${currentUserName}</b>.` }];
-      localStorage.setItem('ipm_logistic_logs', JSON.stringify(logs));
-      renderLogs();
+    async function handleClearLogOnly() {
+      await supabaseClient.from('event_logs').delete().neq('id', 0);
+      await addLog(`Riwayat aktivitas dibersihkan oleh <b>${currentUserName}</b>.`);
       toggleModal('resetModal', false);
-      showAlert("Riwayat Dibersihkan", "Riwayat aktivitas tim berhasil dikosongkan.");
+      showAlert("Riwayat Dibersihkan", "Riwayat aktivitas tim berhasil dikosongkan secara realtime di seluruh HP.");
     }
 
     function triggerFullResetConfirmation() {
@@ -596,18 +637,17 @@
 
     async function executeFullReset() {
       toggleModal('finalConfirmModal', false);
-      // Hapus seluruh barang di Supabase Cloud
-      const { error } = await supabaseClient.from('event_items').delete().neq('id', '0');
+      // Hapus seluruh barang & log di Supabase Cloud
+      const errItems = await supabaseClient.from('event_items').delete().neq('id', '0');
+      const errLogs = await supabaseClient.from('event_logs').delete().neq('id', 0);
       
-      if (!error) {
+      if (!errItems.error) {
         items = [];
-        logs = [{ time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), text: `Sistem di-reset total untuk event baru oleh <b>${currentUserName}</b>.` }];
-        localStorage.setItem('ipm_logistic_logs', JSON.stringify(logs));
-        
+        await addLog(`Sistem di-reset total untuk event baru oleh <b>${currentUserName}</b>.`);
         renderApp();
         showAlert("Reset Berhasil", "Seluruh data barang & riwayat telah bersih (0). Kamu siap menginput barang untuk event baru!");
       } else {
-        showAlert("Gagal Reset", "Gagal mereset database cloud: " + error.message);
+        showAlert("Gagal Reset", "Gagal mereset database cloud: " + errItems.error.message);
       }
     }
 
@@ -673,7 +713,7 @@
       };
 
       await saveItemToCloud(newItem);
-      addLog(`Menambahkan barang "<b>${name}</b>" (${qty} unit)`);
+      await addLog(`Menambahkan barang "<b>${name}</b>" (${qty} unit)`);
       
       document.getElementById('addItemForm').reset();
       toggleModal('addItemModal', false);
@@ -688,9 +728,9 @@
         
         await saveItemToCloud(item);
         if (item.type === 'dibeli') {
-          addLog(`Membeli/Mengambil "<b>${item.name}</b>" oleh <b>${currentUserName}</b>`);
+          await addLog(`Membeli/Mengambil "<b>${item.name}</b>" oleh <b>${currentUserName}</b>`);
         } else {
-          addLog(`Mengambil "<b>${item.name}</b>" oleh <b>${currentUserName}</b>`);
+          await addLog(`Mengambil "<b>${item.name}</b>" oleh <b>${currentUserName}</b>`);
         }
       }
     }
@@ -745,12 +785,12 @@
           reader.onload = async function(evt) {
             item.photo = evt.target.result;
             await saveItemToCloud(item);
-            addLog(`${actionWord} "<b>${item.name}</b>" di [${location}] oleh ${currentUserName} + Foto`);
+            await addLog(`${actionWord} "<b>${item.name}</b>" di [${location}] oleh ${currentUserName} + Foto`);
           };
           reader.readAsDataURL(photoInput.files[0]);
         } else {
           await saveItemToCloud(item);
-          addLog(`${actionWord} "<b>${item.name}</b>" di [${location}] oleh ${currentUserName}`);
+          await addLog(`${actionWord} "<b>${item.name}</b>" di [${location}] oleh ${currentUserName}`);
         }
 
         toggleModal('returnModal', false);
@@ -765,7 +805,7 @@
       const item = items.find(i => i.id === id);
       const { error } = await supabaseClient.from('event_items').delete().eq('id', id);
       if (!error) {
-        addLog(`Menghapus "<b>${item ? item.name : 'Barang'}</b>"`);
+        await addLog(`Menghapus "<b>${item ? item.name : 'Barang'}</b>"`);
       }
     }
 
