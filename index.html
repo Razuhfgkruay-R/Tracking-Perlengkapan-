@@ -25,9 +25,9 @@
     <!-- SPLASH SCREEN / LOADING OVERLAY -->
     <div id="splashScreen" class="fixed inset-0 bg-ipm text-white flex flex-col items-center justify-between p-8 z-50 transition-opacity duration-500">
       <div class="flex-1 flex flex-col items-center justify-center space-y-6 w-full max-w-xs text-center">
-        <!-- LOGO PNG IPM -->
+        <!-- LOGO PNG IPM DARI GITHUB -->
         <div class="w-20 h-20 bg-white/20 rounded-2xl p-2 flex items-center justify-center backdrop-blur-md border border-white/40 shadow-sm animate-pulse">
-          <img id="splashLogoPng" src="https://upload.wikimedia.org/wikipedia/commons/f/f0/Logo_IPM.png" alt="Logo IPM" class="max-w-full max-h-full object-contain">
+          <img id="splashLogoPng" src="logo.png" alt="Logo IPM" class="max-w-full max-h-full object-contain">
         </div>
         <div class="space-y-1">
           <h2 class="text-2xl font-black tracking-tight text-white">IPM Event Logistic</h2>
@@ -46,9 +46,9 @@
     <header class="bg-ipm text-white shadow-md sticky top-0 z-30">
       <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <!-- HEADER LOGO PNG IPM -->
+          <!-- HEADER LOGO PNG IPM DARI GITHUB -->
           <div class="w-10 h-10 bg-white/20 rounded-xl p-1 flex items-center justify-center border border-white/40 shadow-sm shrink-0">
-            <img id="headerLogoPng" src="https://upload.wikimedia.org/wikipedia/commons/f/f0/Logo_IPM.png" alt="Logo IPM" class="max-w-full max-h-full object-contain">
+            <img id="headerLogoPng" src="logo.png" alt="Logo IPM" class="max-w-full max-h-full object-contain">
           </div>
           <div class="py-0.5 leading-normal">
             <span class="text-[11px] font-black uppercase tracking-wider text-white block leading-tight">IPM SMA Muhammadiyah 2 Depok</span>
@@ -187,7 +187,7 @@
     </div>
   </div>
 
-  <!-- MODAL 2: MENGGANTIKAN POPUP BROWSER (CUSTOM FINAL CONFIRMATION) -->
+  <!-- MODAL 2: CUSTOM FINAL CONFIRMATION -->
   <div id="finalConfirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-[60] p-4">
     <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden p-5 text-center space-y-4 border border-rose-100">
       <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto animate-bounce">
@@ -767,7 +767,13 @@
       }
     }
 
+    // FITUR EXPORT LAPORAN KOMPATIBEL UNTUK SEMUA HP
     function exportAdminReport() {
+      if (items.length === 0 && logs.length === 0) {
+        showAlert("Laporan Kosong", "Belum ada data barang atau riwayat aktivitas untuk diunduh.");
+        return;
+      }
+
       let reportText = `=========================================\n`;
       reportText += `LAPORAN RESMI IPM - SMA MUHAMMADIYAH 2 DEPOK\n`;
       reportText += `Event: ${eventInfo.name} (${eventInfo.date})\n`;
@@ -779,7 +785,7 @@
         reportText += `${idx + 1}. [${i.status.toUpperCase()}] ${i.name} (Qty: ${i.qty}) - Tipe: ${i.type}\n`;
         reportText += `   Asal/Beli: ${i.origin} | Tujuan/Simpan: ${i.return_location}\n`;
         reportText += `   PIC Terakhir: ${i.assigned_to || '-'} | Update Terakhir: ${i.updated_by || '-'}\n`;
-        if(i.deadline !== '-') reportText += `   Deadline: ${i.deadline}\n`;
+        if(i.deadline && i.deadline !== '-') reportText += `   Deadline: ${i.deadline}\n`;
         if(i.note) reportText += `   Catatan: ${i.note}\n`;
         reportText += `-----------------------------------------\n`;
       });
@@ -792,15 +798,16 @@
 
       reportText += `\nPowered By Razuhfgkruay\n`;
 
-      const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Laporan_IPM_${eventInfo.name.replace(/\s+/g, '_')}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const fileName = `Laporan_IPM_${eventInfo.name.replace(/\s+/g, '_')}.txt`;
+      const encodedUri = "data:text/plain;charset=utf-8," + encodeURIComponent(reportText);
+      
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      
+      link.click();
+      document.body.removeChild(link);
     }
 
     function shareToWhatsApp() {
