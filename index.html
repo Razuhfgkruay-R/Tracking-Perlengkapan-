@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Universal Event Logistics Tracker</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Supabase JS Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen">
+
+  <!-- SPLASH SCREEN / LOADING OVERLAY -->
+  <div id="splashScreen" class="fixed inset-0 bg-indigo-900 text-white flex flex-col items-center justify-between p-8 z-50 transition-opacity duration-500">
+    <div class="flex-1 flex flex-col items-center justify-center space-y-6 w-full max-w-xs text-center">
+      <div class="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/20 shadow-lg animate-pulse">
+        <i data-lucide="box" class="w-8 h-8 text-indigo-200"></i>
+      </div>
+      <div class="space-y-1">
+        <h2 class="text-2xl font-bold tracking-tight">Welcome</h2>
+        <p class="text-xs text-indigo-200">One Way Report</p>
+      </div>
+      <div class="w-full bg-indigo-950/60 rounded-full h-2.5 overflow-hidden p-0.5 border border-indigo-700/50">
+        <div id="loadingBarFill" class="bg-indigo-400 h-full rounded-full w-0 transition-all duration-1000 ease-out"></div>
+      </div>
+    </div>
+    <div class="text-[11px] text-indigo-300 font-medium tracking-wide">
+      powered by razuhfgkruay
+    </div>
+  </div>
+
+  <!-- TOP BAR / HEADER -->
+  <header class="bg-indigo-700 text-white shadow-md sticky top-0 z-30">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div>
+        <span id="eventDateBadge" class="text-xs font-semibold uppercase tracking-wider text-indigo-200">Universal Event Tracker</span>
+        <h1 id="eventTitleDisplay" class="text-xl font-bold flex items-center gap-2 cursor-pointer hover:text-indigo-200 transition" onclick="openEventSettingsModal()">
+          <i data-lucide="box" class="w-6 h-6"></i>
+          <span id="eventNameText">Isi Nama Event</span>
+          <i id="eventSettingsIcon" data-lucide="settings" class="w-4 h-4 text-indigo-300 opacity-60"></i>
+        </h1>
+      </div>
+      
+      <!-- User & Role Badge -->
+      <div class="flex items-center gap-2">
+        <div onclick="openUserModal()" class="bg-indigo-800 hover:bg-indigo-900 cursor-pointer px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 border border-indigo-500 transition shadow-sm">
+          <i data-lucide="user-check" class="w-4 h-4 text-indigo-300"></i>
+          <span id="currentUserBadge" class="font-medium text-xs sm:text-sm">PIC: Nama PJ</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- STATS -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
+        <p class="text-xs text-slate-500">Total Barang</p>
+        <p id="statTotal" class="text-2xl font-bold text-slate-800">0</p>
+      </div>
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
+        <p class="text-xs text-slate-500">Belum Diambil</p>
+        <p id="statBelumDiambil" class="text-2xl font-bold text-amber-600">0</p>
+      </div>
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
+        <p class="text-xs text-slate-500">Sedang Digunakan</p>
+        <p id="statBelumKembali" class="text-2xl font-bold text-blue-600">0</p>
+      </div>
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
+        <p class="text-xs text-slate-500">Selesai / Dikembalikan</p>
+        <p id="statSelesai" class="text-2xl font-bold text-emerald-600">0</p>
+      </div>
+    </div>
+
+    <!-- CONTROL BAR: SEARCH, FILTER, & ACTIONS -->
+    <div class="space-y-3">
+      <!-- Search Bar -->
+      <div class="relative w-full">
+        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+          <i data-lucide="search" class="w-4 h-4"></i>
+        </div>
+        <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Cari nama barang, lokasi, atau PIC secara global..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white shadow-sm">
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center">
+        <!-- Filter Tabs -->
+        <div class="flex bg-slate-200 p-1 rounded-xl gap-1 text-xs sm:text-sm font-medium w-full sm:w-auto flex-1">
+          <button onclick="setFilter('all')" id="tab-all" class="flex-1 px-3 py-1.5 rounded-lg bg-white shadow text-indigo-700 text-center transition">Semua</button>
+          <button onclick="setFilter('belum_diambil')" id="tab-belum_diambil" class="flex-1 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 text-center transition">Belum</button>
+          <button onclick="setFilter('belum_dikembalikan')" id="tab-belum_dikembalikan" class="flex-1 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 text-center transition">Proses</button>
+          <button onclick="setFilter('selesai')" id="tab-selesai" class="flex-1 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 text-center transition">Selesai</button>
+        </div>
+
+        <!-- Action Buttons: WhatsApp Report & Add Item -->
+        <div class="flex items-center gap-2">
+          <button onclick="shareToWhatsApp()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 shadow-sm transition" title="Kirim rangkuman status ke grup WhatsApp">
+            <i data-lucide="message-circle" class="w-4 h-4"></i> Laporan WA
+          </button>
+          <button id="btnAddItem" onclick="toggleModal('addItemModal', true)" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 shadow-sm transition">
+            <i data-lucide="plus" class="w-4 h-4"></i> Tambah
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ITEM LIST CONTAINER -->
+    <div id="itemList" class="space-y-3">
+      <!-- Cards injected dynamically -->
+    </div>
+
+    <!-- LOG ACTIVITY SECTION & ADMIN EXPORT -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+          <i data-lucide="history" class="w-4 h-4 text-slate-500"></i> Riwayat Aktivitas Tim
+        </h2>
+        <!-- Tombol Export Laporan Khusus Admin -->
+        <button id="btnExport" onclick="exportAdminReport()" class="hidden bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-semibold px-3 py-1.5 rounded-lg items-center gap-1.5 transition">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i> Download Laporan (.txt)
+        </button>
+      </div>
+      <div id="logList" class="space-y-2 max-h-40 overflow-y-auto text-xs text-slate-600 divide-y divide-slate-100">
+        <!-- Logs -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL: KUSTOM ALERT / INFO -->
+  <div id="alertModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden p-5 text-center space-y-4">
+      <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto">
+        <i data-lucide="info" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h3 class="font-bold text-slate-800 text-base" id="alertTitle">Informasi</h3>
+        <p class="text-xs text-slate-500 mt-1 leading-relaxed" id="alertMessage">Pesan informasi sistem.</p>
+      </div>
+      <button onclick="toggleModal('alertModal', false)" class="w-full py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm">Mengerti</button>
+    </div>
+  </div>
+
+  <!-- MODAL: PENGATURAN IDENTITAS & PERAN USER -->
+  <div id="userModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+      <div class="bg-indigo-50 px-5 py-4 border-b border-indigo-100 flex justify-between items-center">
+        <h3 class="font-bold text-indigo-900 flex items-center gap-2">
+          <i data-lucide="user-cog" class="w-5 h-5 text-indigo-600"></i> Identitas & Peran Petugas
+        </h3>
+        <button onclick="toggleModal('userModal', false)" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form onsubmit="handleSaveUser(event)" class="p-5 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Kamu *</label>
+          <input type="text" id="inputUserName" required placeholder="misal: Yusuf" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-2">Pilih Peran / Hak Akses *</label>
+          <div class="grid grid-cols-2 gap-3">
+            <div id="roleCardAdmin" onclick="selectRoleOption('admin')" class="cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-indigo-600 bg-indigo-50/50">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-xs text-indigo-900">PIC / Admin</span>
+                <i data-lucide="shield-check" class="w-4 h-4 text-indigo-600"></i>
+              </div>
+              <p class="text-[10px] text-slate-500 leading-tight">Berhak Mengontrol Opsi.</p>
+            </div>
+            <div id="roleCardMember" onclick="selectRoleOption('member')" class="cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-slate-200 bg-white hover:border-slate-300">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-xs text-slate-700">Anggota</span>
+                <i data-lucide="user" class="w-4 h-4 text-slate-400"></i>
+              </div>
+              <p class="text-[10px] text-slate-500 leading-tight">Update status & foto barang.</p>
+            </div>
+          </div>
+          <input type="hidden" id="inputUserRole" value="admin">
+        </div>
+        <div class="pt-2 flex gap-2">
+          <button type="button" onclick="toggleModal('userModal', false)" class="w-1/2 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200">Batal</button>
+          <button type="submit" class="w-1/2 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700">Simpan Identitas</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: PENGATURAN EVENT (ADMIN ONLY) -->
+  <div id="eventSettingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+      <div class="bg-indigo-50 px-5 py-4 border-b border-indigo-100 flex justify-between items-center">
+        <h3 class="font-bold text-indigo-900 flex items-center gap-2">
+          <i data-lucide="sliders" class="w-5 h-5 text-indigo-600"></i> Pengaturan Event
+        </h3>
+        <button onclick="toggleModal('eventSettingsModal', false)" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form onsubmit="handleSaveEventSettings(event)" class="p-5 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Event Baru *</label>
+          <input type="text" id="settingEventName" required class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal / Waktu *</label>
+          <input type="text" id="settingEventDate" required placeholder="misal: 20-22 Agustus 2026" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+        <div class="pt-2 flex gap-2">
+          <button type="button" onclick="toggleModal('eventSettingsModal', false)" class="w-1/2 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200">Batal</button>
+          <button type="submit" class="w-1/2 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: TAMBAH BARANG -->
+  <div id="addItemModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+      <div class="bg-slate-50 px-5 py-4 border-b border-slate-100 flex justify-between items-center">
+        <h3 class="font-bold text-slate-800">Tambah Barang Baru</h3>
+        <button onclick="toggleModal('addItemModal', false)" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form id="addItemForm" onsubmit="handleAddItem(event)" class="p-5 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Barang *</label>
+          <input type="text" id="itemName" required placeholder="misal: Sound System Set" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Tipe Barang</label>
+            <select id="itemType" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+              <option value="dipinjam">Pinjam</option>
+              <option value="dibeli">Beli</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Jumlah (Qty)</label>
+            <input type="number" id="itemQty" min="1" value="1" required class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Lokasi Asal / Tempat Beli *</label>
+          <input type="text" id="itemOrigin" required placeholder="misal: Gudang Utama / Toko ATK" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Target Waktu (Deadline)</label>
+            <input type="text" id="itemDeadline" placeholder="misal: Sabtu, 14:00 WIB" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Kontak Vendor/Pemilik (WA)</label>
+            <input type="text" id="itemContact" placeholder="misal: Pak Joko (08123...)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+        </div>
+        <div class="pt-2 flex gap-2">
+          <button type="button" onclick="toggleModal('addItemModal', false)" class="w-1/2 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200">Batal</button>
+          <button type="submit" class="w-1/2 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700">Simpan Barang</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: PENYELESAIAN -->
+  <div id="returnModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+      <div id="returnModalHeader" class="bg-emerald-50 px-5 py-4 border-b border-emerald-100 flex justify-between items-center">
+        <h3 id="returnModalTitle" class="font-bold text-emerald-900 flex items-center gap-2">
+          <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i> Pengembalian Barang
+        </h3>
+        <button onclick="toggleModal('returnModal', false)" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form id="returnForm" onsubmit="handleReturnSubmit(event)" class="p-5 space-y-4">
+        <input type="hidden" id="returnItemId">
+        <div>
+          <label id="returnLocationLabel" class="block text-xs font-semibold text-slate-600 mb-1">Lokasi Akhir Pengembalian *</label>
+          <input type="text" id="returnLocation" required class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+          <span id="returnLocationSub" class="text-[10px] text-slate-500">Ubah jika dikembalikan ke tempat berbeda dari asal.</span>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Catatan Kondisi / Keterangan</label>
+          <textarea id="returnNote" rows="2" placeholder="misal: Barang lengkap, aman." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Upload Foto Bukti (Opsional)</label>
+          <input type="file" id="returnPhoto" accept="image/*" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+        </div>
+        <div class="pt-2 flex gap-2">
+          <button type="button" onclick="toggleModal('returnModal', false)" class="w-1/2 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200">Batal</button>
+          <button type="submit" id="returnSubmitBtn" class="w-1/2 py-2 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700">Tandai Selesai</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC WITH SUPABASE -->
+  <script>
+    // 1. KONFIGURASI SUPABASE (Ganti dengan credentials milikmu)
+    const SUPABASE_URL = 'MASUKKAN_SUPABASE_URL_DISINI';
+    const SUPABASE_ANON_KEY = 'MASUKKAN_SUPABASE_ANON_KEY_DISINI';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let eventInfo = { name: 'Isi Nama Event', date: 'Tanggal Event' };
+    let userRole = localStorage.getItem('universal_event_role') || 'admin';
+    let currentUserName = localStorage.getItem('universal_event_username') || 'Nama PJ';
+
+    let items = [];
+    let logs = JSON.parse(localStorage.getItem('universal_event_logs')) || [
+      { time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), text: 'Sistem logistik cloud diinisialisasi.' }
+    ];
+
+    let currentFilter = 'all';
+    let searchQuery = '';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      setTimeout(() => {
+        const fillBar = document.getElementById('loadingBarFill');
+        if (fillBar) fillBar.style.width = '100%';
+      }, 100);
+
+      setTimeout(() => {
+        const splash = document.getElementById('splashScreen');
+        if (splash) {
+          splash.classList.add('opacity-0', 'pointer-events-none');
+          setTimeout(() => { splash.style.display = 'none'; }, 500);
+        }
+      }, 1000);
+
+      updateRoleUI();
+      
+      // Ambil data event & item dari Supabase secara paralel
+      await fetchEventConfig();
+      await fetchItemsFromCloud();
+
+      // Realtime Listener untuk items
+      supabaseClient
+        .channel('public:event_items')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'event_items' }, payload => {
+          fetchItemsFromCloud();
+        })
+        .subscribe();
+
+      // Realtime Listener untuk event_config (Nama event berubah otomatis di semua HP)
+      supabaseClient
+        .channel('public:event_config')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'event_config' }, payload => {
+          fetchEventConfig();
+        })
+        .subscribe();
+    });
+
+    async function fetchEventConfig() {
+      const { data, error } = await supabaseClient
+        .from('event_config')
+        .select('*')
+        .eq('id', 'main')
+        .single();
+
+      if (!error && data) {
+        eventInfo = { name: data.name, date: data.date };
+        updateEventHeader();
+      }
+    }
+
+    async function fetchItemsFromCloud() {
+      const { data, error } = await supabaseClient
+        .from('event_items')
+        .select('*')
+        .order('id', { ascending: false });
+
+      if (!error && data) {
+        items = data;
+        renderApp();
+      }
+    }
+
+    function updateEventHeader() {
+      document.getElementById('eventNameText').innerText = eventInfo.name;
+      document.getElementById('eventDateBadge').innerText = `Universal Event • ${eventInfo.date}`;
+    }
+
+    function updateRoleUI() {
+      const badge = document.getElementById('currentUserBadge');
+      const btnAdd = document.getElementById('btnAddItem');
+      const settingsIcon = document.getElementById('eventSettingsIcon');
+      const btnExport = document.getElementById('btnExport');
+      
+      if (userRole === 'admin') {
+        badge.innerText = `PIC: ${currentUserName}`;
+        if(btnAdd) btnAdd.style.display = 'flex';
+        if(settingsIcon) settingsIcon.style.display = 'inline-block';
+        if(btnExport) btnExport.style.display = 'flex';
+      } else {
+        badge.innerText = `Anggota: ${currentUserName}`;
+        if(btnAdd) btnAdd.style.display = 'none';
+        if(settingsIcon) settingsIcon.style.display = 'none';
+        if(btnExport) btnExport.style.display = 'none';
+      }
+    }
+
+    function showAlert(title, message) {
+      document.getElementById('alertTitle').innerText = title;
+      document.getElementById('alertMessage').innerText = message;
+      toggleModal('alertModal', true);
+    }
+
+    function openUserModal() {
+      document.getElementById('inputUserName').value = currentUserName;
+      selectRoleOption(userRole);
+      toggleModal('userModal', true);
+    }
+
+    function selectRoleOption(role) {
+      document.getElementById('inputUserRole').value = role;
+      const cardAdmin = document.getElementById('roleCardAdmin');
+      const cardMember = document.getElementById('roleCardMember');
+
+      if (role === 'admin') {
+        cardAdmin.className = "cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-indigo-600 bg-indigo-50/50";
+        cardAdmin.querySelector('span').className = "font-bold text-xs text-indigo-900";
+        cardMember.className = "cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-slate-200 bg-white hover:border-slate-300";
+        cardMember.querySelector('span').className = "font-bold text-xs text-slate-700";
+      } else {
+        cardMember.className = "cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-indigo-600 bg-indigo-50/50";
+        cardMember.querySelector('span').className = "font-bold text-xs text-indigo-900";
+        cardAdmin.className = "cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-slate-200 bg-white hover:border-slate-300";
+        cardAdmin.querySelector('span').className = "font-bold text-xs text-slate-700";
+      }
+    }
+
+    function handleSaveUser(e) {
+      e.preventDefault();
+      const newName = document.getElementById('inputUserName').value.trim();
+      const newRole = document.getElementById('inputUserRole').value;
+
+      if (newName) {
+        currentUserName = newName;
+        userRole = newRole;
+        localStorage.setItem('universal_event_username', currentUserName);
+        localStorage.setItem('universal_event_role', userRole);
+
+        updateRoleUI();
+        addLog(`Memperbarui profil ke <b>${userRole === 'admin' ? 'PIC' : 'Anggota'} (${currentUserName})</b>`);
+        toggleModal('userModal', false);
+        renderApp();
+      }
+    }
+
+    function openEventSettingsModal() {
+      if (userRole !== 'admin') {
+        showAlert("Akses Terbatas", "Mode Anggota hanya dapat memperbarui status barang. Hanya PIC (Admin) yang dapat mengubah nama event.");
+        return;
+      }
+      document.getElementById('settingEventName').value = eventInfo.name;
+      document.getElementById('settingEventDate').value = eventInfo.date;
+      toggleModal('eventSettingsModal', true);
+    }
+
+    async function handleSaveEventSettings(e) {
+      e.preventDefault();
+      const newName = document.getElementById('settingEventName').value;
+      const newDate = document.getElementById('settingEventDate').value;
+
+      // Simpan perubahan ke tabel event_config di Supabase
+      const { error } = await supabaseClient
+        .from('event_config')
+        .upsert({ id: 'main', name: newName, date: newDate });
+
+      if (!error) {
+        eventInfo.name = newName;
+        eventInfo.date = newDate;
+        updateEventHeader();
+        addLog(`Mengubah detail event menjadi "<b>${newName}</b>" (${newDate})`);
+        toggleModal('eventSettingsModal', false);
+        renderApp();
+      } else {
+        alert("Gagal memperbarui event: " + error.message);
+      }
+    }
+
+    function addLog(actionText) {
+      const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      logs.unshift({ time: timeStr, text: `<b>${currentUserName}</b>: ${actionText}` });
+      if(logs.length > 30) logs.pop();
+      localStorage.setItem('universal_event_logs', JSON.stringify(logs));
+      renderLogs();
+    }
+
+    async function saveItemToCloud(itemData) {
+      const { error } = await supabaseClient.from('event_items').upsert(itemData);
+      if (error) {
+        alert("Gagal menyimpan ke database cloud: " + error.message);
+      }
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      ['all', 'belum_diambil', 'belum_dikembalikan', 'selesai'].forEach(f => {
+        const btn = document.getElementById(`tab-${f}`);
+        if(f === filter) {
+          btn.className = "flex-1 px-3 py-1.5 rounded-lg bg-white shadow text-indigo-700 text-center font-semibold transition";
+        } else {
+          btn.className = "flex-1 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 text-center transition";
+        }
+      });
+      renderItemList();
+    }
+
+    function handleSearch(query) {
+      searchQuery = query.toLowerCase().trim();
+      renderItemList();
+    }
+
+    function toggleModal(modalId, show) {
+      const modal = document.getElementById(modalId);
+      if (show) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    async function handleAddItem(e) {
+      e.preventDefault();
+      const name = document.getElementById('itemName').value;
+      const type = document.getElementById('itemType').value;
+      const qty = parseInt(document.getElementById('itemQty').value) || 1;
+      const origin = document.getElementById('itemOrigin').value;
+      const deadline = document.getElementById('itemDeadline').value;
+      const contact = document.getElementById('itemContact').value;
+
+      const newItem = {
+        id: Date.now().toString(),
+        name,
+        type,
+        qty,
+        origin,
+        contact,
+        deadline: deadline || '-',
+        status: 'belum_diambil',
+        return_location: type === 'dipinjam' ? origin : 'Kotak Logistik Event',
+        note: '',
+        photo: null,
+        updated_by: currentUserName,
+        assigned_to: '-'
+      };
+
+      await saveItemToCloud(newItem);
+      addLog(`Menambahkan barang "<b>${name}</b>" (${qty} unit)`);
+      
+      document.getElementById('addItemForm').reset();
+      toggleModal('addItemModal', false);
+    }
+
+    async function markAsTaken(id) {
+      const item = items.find(i => i.id === id);
+      if (item) {
+        item.status = 'diambil';
+        item.updated_by = currentUserName;
+        item.assigned_to = currentUserName;
+        
+        await saveItemToCloud(item);
+        if (item.type === 'dibeli') {
+          addLog(`Membeli/Mengambil "<b>${item.name}</b>" oleh <b>${currentUserName}</b>`);
+        } else {
+          addLog(`Mengambil "<b>${item.name}</b>" oleh <b>${currentUserName}</b>`);
+        }
+      }
+    }
+
+    function openReturnModal(id) {
+      const item = items.find(i => i.id === id);
+      if (item) {
+        document.getElementById('returnItemId').value = item.id;
+        document.getElementById('returnLocation').value = item.return_location || item.origin;
+        document.getElementById('returnNote').value = item.note || '';
+
+        const modalTitle = document.getElementById('returnModalTitle');
+        const modalLocationLabel = document.getElementById('returnLocationLabel');
+        const modalLocationSub = document.getElementById('returnLocationSub');
+        const submitBtn = document.getElementById('returnSubmitBtn');
+
+        if (item.type === 'dibeli') {
+          modalTitle.innerHTML = `<i data-lucide="package-check" class="w-5 h-5 text-emerald-600"></i> Penyimpanan Barang Dibeli`;
+          modalLocationLabel.innerText = "Lokasi Penyimpanan / Penaruhan *";
+          modalLocationSub.innerText = "Tuliskan di mana barang hasil belanja ini ditaruh.";
+          submitBtn.innerText = "Tandai Selesai / Disimpan";
+        } else {
+          modalTitle.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i> Pengembalian Barang Pinjaman`;
+          modalLocationLabel.innerText = "Lokasi Akhir Pengembalian *";
+          modalLocationSub.innerText = "Ubah jika dikembalikan ke tempat berbeda dari asal.";
+          submitBtn.innerText = "Tandai Selesai";
+        }
+
+        toggleModal('returnModal', true);
+        lucide.createIcons();
+      }
+    }
+
+    async function handleReturnSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('returnItemId').value;
+      const location = document.getElementById('returnLocation').value;
+      const note = document.getElementById('returnNote').value;
+      const photoInput = document.getElementById('returnPhoto');
+
+      const item = items.find(i => i.id === id);
+      if (item) {
+        item.status = 'selesai';
+        item.return_location = location;
+        item.note = note;
+        item.updated_by = currentUserName;
+
+        const actionWord = item.type === 'dibeli' ? 'Menyimpan' : 'Mengembalikan';
+
+        if (photoInput.files && photoInput.files[0]) {
+          const reader = new FileReader();
+          reader.onload = async function(evt) {
+            item.photo = evt.target.result;
+            await saveItemToCloud(item);
+            addLog(`${actionWord} "<b>${item.name}</b>" di [${location}] oleh ${currentUserName} + Foto`);
+          };
+          reader.readAsDataURL(photoInput.files[0]);
+        } else {
+          await saveItemToCloud(item);
+          addLog(`${actionWord} "<b>${item.name}</b>" di [${location}] oleh ${currentUserName}`);
+        }
+
+        toggleModal('returnModal', false);
+      }
+    }
+
+    async function deleteItem(id) {
+      if (userRole !== 'admin') {
+        showAlert("Akses Dibatasi", "Hanya PIC (Admin) yang dapat menghapus barang dari daftar.");
+        return;
+      }
+      if(confirm("Yakin ingin menghapus barang ini dari daftar?")) {
+        const item = items.find(i => i.id === id);
+        const { error } = await supabaseClient.from('event_items').delete().eq('id', id);
+        if (!error) {
+          addLog(`Menghapus "<b>${item ? item.name : 'Barang'}</b>"`);
+        }
+      }
+    }
+
+    // FITUR EXPORT LAPORAN ADMIN KE FILE TEKS (.TXT)
+    function exportAdminReport() {
+      let reportText = `=========================================\n`;
+      reportText += `LAPORAN RESMI LOGISTIK EVENT\n`;
+      reportText += `Event: ${eventInfo.name} (${eventInfo.date})\n`;
+      reportText += `Diexport oleh Admin: ${currentUserName} pada ${new Date().toLocaleString()}\n`;
+      reportText += `=========================================\n\n`;
+
+      reportText += `--- RINGKASAN DATA BARANG (${items.length} Item Total) ---\n`;
+      items.forEach((i, idx) => {
+        reportText += `${idx + 1}. [${i.status.toUpperCase()}] ${i.name} (Qty: ${i.qty}) - Tipe: ${i.type}\n`;
+        reportText += `   Asal/Beli: ${i.origin} | Tujuan/Simpan: ${i.return_location}\n`;
+        reportText += `   PIC Terakhir: ${i.assigned_to || '-'} | Update Terakhir: ${i.updated_by || '-'}\n`;
+        if(i.deadline !== '-') reportText += `   Deadline: ${i.deadline}\n`;
+        if(i.note) reportText += `   Catatan: ${i.note}\n`;
+        reportText += `-----------------------------------------\n`;
+      });
+
+      reportText += `\n--- RIWAYAT AKTIVITAS TIM ---\n`;
+      logs.forEach(l => {
+        const cleanText = l.text.replace(/<\/?[^>]+(>|$)/g, "");
+        reportText += `[${l.time}] ${cleanText}\n`;
+      });
+
+      const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Laporan_Logistik_${eventInfo.name.replace(/\s+/g, '_')}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function shareToWhatsApp() {
+      let text = `📋 *LAPORAN LOGISTIK: ${eventInfo.name}* (${eventInfo.date})\n\n`;
+      
+      let belumDiambil = items.filter(i => i.status === 'belum_diambil');
+      let dipinjam = items.filter(i => i.status === 'diambil');
+      let selesai = items.filter(i => i.status === 'selesai');
+
+      text += `🔴 *Belum Diambil / Dibeli (${belumDiambil.reduce((s,i)=>s+i.qty,0)} unit):*\n`;
+      if(belumDiambil.length === 0) text += `- (Nihil)\n`;
+      belumDiambil.forEach(i => {
+        text += `• ${i.name} (${i.qty} unit) - Asal: ${i.origin} ${i.deadline !== '-' ? '⏱ ' + i.deadline : ''}\n`;
+      });
+
+      text += `\n🟡 *Proses / Sedang Dipegang (${dipinjam.reduce((s,i)=>s+i.qty,0)} unit):*\n`;
+      if(dipinjam.length === 0) text += `- (Nihil)\n`;
+      dipinjam.forEach(i => {
+        text += `• ${i.name} (${i.qty} unit) - PIC: *${i.assigned_to}*\n`;
+      });
+
+      text += `\n🟢 *Selesai / Aman (${selesai.reduce((s,i)=>s+i.qty,0)} unit):*\n`;
+      text += `${selesai.length} jenis item sudah beres.\n\n`;
+      text += `_Diperbarui via Universal Event Tracker_`;
+
+      const encoded = encodeURIComponent(text);
+      window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
+    }
+
+    function renderApp() {
+      renderStats();
+      renderItemList();
+      renderLogs();
+      lucide.createIcons();
+    }
+
+    function renderStats() {
+      const totalQty = items.reduce((sum, item) => sum + (parseInt(item.qty) || 1), 0);
+      const belumDiambilQty = items.filter(i => i.status === 'belum_diambil').reduce((sum, item) => sum + (parseInt(item.qty) || 1), 0);
+      const belumKembaliQty = items.filter(i => i.status === 'diambil').reduce((sum, item) => sum + (parseInt(item.qty) || 1), 0);
+      const selesaiQty = items.filter(i => i.status === 'selesai').reduce((sum, item) => sum + (parseInt(item.qty) || 1), 0);
+
+      document.getElementById('statTotal').innerText = totalQty;
+      document.getElementById('statBelumDiambil').innerText = belumDiambilQty;
+      document.getElementById('statBelumKembali').innerText = belumKembaliQty;
+      document.getElementById('statSelesai').innerText = selesaiQty;
+    }
+
+    function renderItemList() {
+      const container = document.getElementById('itemList');
+      container.innerHTML = '';
+
+      let filtered = items;
+
+      if (currentFilter === 'belum_diambil') filtered = filtered.filter(i => i.status === 'belum_diambil');
+      if (currentFilter === 'belum_dikembalikan') filtered = filtered.filter(i => i.status === 'diambil');
+      if (currentFilter === 'selesai') filtered = filtered.filter(i => i.status === 'selesai');
+
+      if (searchQuery !== '') {
+        filtered = filtered.filter(i => {
+          const name = (i.name || '').toLowerCase();
+          const origin = (i.origin || '').toLowerCase();
+          const assigned = (i.assigned_to || '').toLowerCase();
+          return name.includes(searchQuery) || origin.includes(searchQuery) || assigned.includes(searchQuery);
+        });
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl p-8 text-center border border-slate-200">
+            <i data-lucide="search-x" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
+            <p class="text-slate-500 font-medium text-sm">Tidak ada barang yang ditemukan.</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      filtered.forEach(item => {
+        let statusBadge = '';
+        let actionButtons = '';
+
+        if (item.status === 'belum_diambil') {
+          statusBadge = `<span class="bg-amber-100 text-amber-800 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> ${item.type === 'dipinjam' ? 'Belum Diambil' : 'Belum Dibeli'}</span>`;
+          actionButtons = `
+            <button onclick="markAsTaken('${item.id}')" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+              <i data-lucide="check" class="w-3.5 h-3.5"></i> ${item.type === 'dipinjam' ? 'Ambil Barang' : 'Tandai Sudah Dibeli'}
+            </button>
+          `;
+        } else if (item.status === 'diambil') {
+          statusBadge = `<span class="bg-blue-100 text-blue-800 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1"><i data-lucide="arrow-right-left" class="w-3 h-3"></i> ${item.type === 'dipinjam' ? 'Sedang Dipakai' : 'Sudah Dibeli'}</span>`;
+          actionButtons = `
+            <button onclick="openReturnModal('${item.id}')" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+              <i data-lucide="corner-down-left" class="w-3.5 h-3.5"></i> ${item.type === 'dipinjam' ? 'Kembalikan' : 'Simpan Barang'}
+            </button>
+          `;
+        } else if (item.status === 'selesai') {
+          statusBadge = `<span class="bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3 h-3"></i> Selesai</span>`;
+        }
+
+        const typeBadge = item.type === 'dipinjam' 
+          ? `<span class="border border-indigo-200 text-indigo-700 text-[10px] font-semibold px-2 py-0.5 rounded">Pinjam</span>`
+          : `<span class="border border-purple-200 text-purple-700 text-[10px] font-semibold px-2 py-0.5 rounded">Beli</span>`;
+
+        const card = document.createElement('div');
+        card.className = "bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition space-y-3";
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                ${typeBadge}
+                <span class="text-xs font-semibold text-slate-400">Qty: ${item.qty}</span>
+                ${item.deadline && item.deadline !== '-' ? `<span class="bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-semibold px-2 py-0.5 rounded flex items-center gap-1"><i data-lucide="timer" class="w-3 h-3"></i> ${item.deadline}</span>` : ''}
+              </div>
+              <h3 class="font-bold text-slate-800 text-base">${item.name}</h3>
+            </div>
+            <div>${statusBadge}</div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-xl text-slate-600">
+            <div>
+              <span class="text-slate-400 block text-[10px] font-semibold uppercase">${item.type === 'dipinjam' ? 'Lokasi Asal' : 'Tempat Beli'}</span>
+              <p class="font-medium text-slate-700 flex items-center gap-1">
+                <i data-lucide="map-pin" class="w-3 h-3 text-slate-400"></i> ${item.origin}
+              </p>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] font-semibold uppercase">${item.type === 'dipinjam' ? 'Pengembalian' : 'Lokasi Penyimpanan'}</span>
+              <p class="font-medium ${item.return_location !== item.origin ? 'text-amber-700 font-bold' : 'text-slate-700'} flex items-center gap-1">
+                <i data-lucide="navigation" class="w-3 h-3 text-slate-400"></i> ${item.return_location || '-'}
+              </p>
+            </div>
+            <div class="sm:col-span-2 pt-1 border-t border-slate-200/60 flex items-center justify-between">
+              <span class="text-slate-500">PIC Penanggung Jawab: <b class="text-indigo-700">${item.assigned_to || '-'}</b></span>
+              ${item.contact ? `<span class="text-slate-500">Kontak: <b>${item.contact}</b></span>` : ''}
+            </div>
+          </div>
+
+          ${item.note || item.photo ? `
+          <div class="text-xs bg-emerald-50/50 border border-emerald-100 p-2.5 rounded-xl space-y-2">
+            ${item.note ? `<p class="text-emerald-900"><b>Catatan:</b> ${item.note}</p>` : ''}
+            ${item.photo ? `<img src="${item.photo}" class="w-20 h-20 object-cover rounded-lg border border-emerald-200" alt="Bukti">` : ''}
+          </div>` : ''}
+
+          <div class="flex items-center justify-between pt-1 border-t border-slate-100">
+            <span class="text-[11px] text-slate-400">Update oleh: <b>${item.updated_by || '-'}</b></span>
+            <div class="flex items-center gap-2">
+              ${userRole === 'admin' ? `
+              <button onclick="deleteItem('${item.id}')" class="text-slate-400 hover:text-red-500 p-1" title="Hapus Barang">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>` : ''}
+              ${actionButtons}
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    function renderLogs() {
+      const container = document.getElementById('logList');
+      container.innerHTML = logs.map(l => `
+        <div class="py-1 flex items-start justify-between gap-2">
+          <span>${l.text}</span>
+          <span class="text-[10px] text-slate-400 shrink-0">${l.time}</span>
+        </div>
+      `).join('');
+    }
+  </script>
+</body>
+</html>
