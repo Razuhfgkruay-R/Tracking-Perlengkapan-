@@ -49,7 +49,7 @@
       <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-white/20 rounded-xl p-1 flex items-center justify-center border border-white/40 shadow-sm shrink-0">
-            <img id="headerLogoPng" src="https://upload.wikimedia.org/wikipedia/commons/f/f0/Logo_IPM.png" alt="Logo IPM" class="max-w-full max-h-full object-contain">
+            <img id="headerLogoPng" src="https://upload.wikimedia.org/wikipedia/commons/f/f0/Logo.png" alt="Logo IPM" class="max-w-full max-h-full object-contain">
           </div>
           <div class="py-0.5 leading-normal">
             <span class="text-[11px] font-black uppercase tracking-wider text-white block leading-tight">IPM SMA Muhammadiyah 2 Depok</span>
@@ -97,7 +97,7 @@
         </div>
       </div>
 
-      <!-- CONTROL BAR: SEARCH, FILTER, & ACTIONS -->
+      <!-- CONTROL BAR: SEARCH, FILTER TIPE, FILTER STATUS, & ACTIONS -->
       <div class="space-y-3">
         <div class="relative w-full">
           <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -106,8 +106,32 @@
           <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Cari nama barang, toko, vendor, atau PIC..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-amber-400 outline-none bg-white shadow-sm">
         </div>
 
+        <!-- TOMBOL PEMISAH TIPE BARANG: PINJAM / SEWA / BELI -->
+        <div class="grid grid-cols-4 gap-2">
+          <button onclick="setTypeFilter('all')" id="type-tab-all" class="px-2.5 py-2 rounded-xl border-2 border-slate-800 bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition">
+            <i data-lucide="layers" class="w-3.5 h-3.5 shrink-0"></i>
+            <span>Semua</span>
+            <span id="count-type-all" class="bg-white/20 text-white text-[10px] px-1.5 py-0.2 rounded-full">0</span>
+          </button>
+          <button onclick="setTypeFilter('dipinjam')" id="type-tab-dipinjam" class="px-2.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-amber-50 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition">
+            <i data-lucide="arrow-left-right" class="w-3.5 h-3.5 text-amber-600 shrink-0"></i>
+            <span>Pinjam</span>
+            <span id="count-type-dipinjam" class="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.2 rounded-full">0</span>
+          </button>
+          <button onclick="setTypeFilter('sewa')" id="type-tab-sewa" class="px-2.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-purple-50 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition">
+            <i data-lucide="repeat" class="w-3.5 h-3.5 text-purple-600 shrink-0"></i>
+            <span>Sewa</span>
+            <span id="count-type-sewa" class="bg-purple-100 text-purple-800 text-[10px] px-1.5 py-0.2 rounded-full">0</span>
+          </button>
+          <button onclick="setTypeFilter('dibeli')" id="type-tab-dibeli" class="px-2.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-orange-50 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition">
+            <i data-lucide="shopping-cart" class="w-3.5 h-3.5 text-orange-600 shrink-0"></i>
+            <span>Beli</span>
+            <span id="count-type-dibeli" class="bg-orange-100 text-orange-800 text-[10px] px-1.5 py-0.2 rounded-full">0</span>
+          </button>
+        </div>
+
         <div class="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center">
-          <!-- Filter Tabs -->
+          <!-- Filter Status Tabs -->
           <div class="flex bg-slate-200 p-1 rounded-xl gap-1 text-xs font-medium w-full sm:w-auto flex-1 overflow-x-auto">
             <button onclick="setFilter('all')" id="tab-all" class="flex-1 px-2.5 py-1.5 rounded-lg bg-white shadow text-slate-900 font-bold text-center transition shrink-0">Semua</button>
             <button onclick="setFilter('belum_diambil')" id="tab-belum_diambil" class="flex-1 px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 text-center transition shrink-0">Belum</button>
@@ -554,6 +578,7 @@
     let logs = [];
     let selectedImageDataUrl = null;
     let currentFilter = 'all';
+    let currentTypeFilter = 'all';
     let searchQuery = '';
 
     // State Live Camera & Timestamp Location
@@ -708,7 +733,6 @@
       return `${datePart} • ${timePart} WIB`;
     }
 
-    // Ambil GPS & Nama Alamat Jalan (Reverse Geocoding)
     function fetchLiveLocation() {
       const badge = document.getElementById('gpsStatusBadge');
       if (!navigator.geolocation) {
@@ -782,7 +806,6 @@
       if (metaEl) metaEl.innerText = `${eventInfo.name} • Petugas: ${currentUserName || '-'}`;
     }
 
-    // Membakar Watermark Tanggal, Jam & Lokasi ke Canvas Gambar
     function stampWatermarkAndCompress(sourceElement, srcWidth, srcHeight, maxWidth = 1024, quality = 0.78) {
       let width = srcWidth;
       let height = srcHeight;
@@ -797,10 +820,8 @@
       canvas.height = height;
       const ctx = canvas.getContext('2d');
 
-      // Gambar foto asli
       ctx.drawImage(sourceElement, 0, 0, width, height);
 
-      // Skala font proporsional terhadap lebar foto
       const scale = Math.max(width / 800, 0.65);
       const pad = Math.round(16 * scale);
       const boxHeight = Math.round(92 * scale);
@@ -808,24 +829,20 @@
       const boxX = pad;
       const boxW = width - pad * 2;
 
-      // Kotak latar belakang semi-transparan di bawah
       ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
       ctx.beginPath();
       ctx.roundRect(boxX, boxY, boxW, boxHeight, Math.round(10 * scale));
       ctx.fill();
 
-      // Garis aksen kuning IPM di sisi kiri kotak
       ctx.fillStyle = '#FFCB05';
       ctx.fillRect(boxX, boxY, Math.round(6 * scale), boxHeight);
 
       const textX = boxX + Math.round(16 * scale);
 
-      // Baris 1: Tanggal & Jam
       ctx.fillStyle = '#FCD34D';
       ctx.font = `bold ${Math.round(18 * scale)}px sans-serif`;
       ctx.fillText(getFormattedTimestamp(), textX, boxY + Math.round(25 * scale));
 
-      // Baris 2: Lokasi GPS / Alamat (dipotong rapi jika terlalu panjang)
       ctx.fillStyle = '#FFFFFF';
       ctx.font = `600 ${Math.round(14 * scale)}px sans-serif`;
       let locLine = currentGeoText;
@@ -835,7 +852,6 @@
       }
       ctx.fillText(locLine, textX, boxY + Math.round(50 * scale));
 
-      // Baris 3: Identitas Event & Petugas
       ctx.fillStyle = 'rgba(226, 232, 240, 0.88)';
       ctx.font = `normal ${Math.round(13 * scale)}px sans-serif`;
       ctx.fillText(`IPM SMA Muhammadiyah 2 Depok • ${eventInfo.name} • Oleh: ${currentUserName || 'Petugas'}`, textX, boxY + Math.round(74 * scale));
@@ -843,7 +859,6 @@
       return canvas.toDataURL('image/jpeg', quality);
     }
 
-    // Kontrol Live Camera
     async function openLiveCamera() {
       const container = document.getElementById('liveCameraContainer');
       const video = document.getElementById('liveCameraVideo');
@@ -1395,7 +1410,6 @@
       const tujuanLabel = eventInfo.name !== 'Isi Nama Event' ? eventInfo.name : '-';
       const tanggalEvent = eventInfo.date !== 'Tanggal Event' ? eventInfo.date : '';
 
-      // HALAMAN 1: DEPAN (KARTU PEMINJAMAN)
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
       doc.setTextColor(0, 0, 0);
@@ -1521,7 +1535,6 @@
       doc.text(SARPRAS_OFFICIALS.principalNbm, 48, signY1 + 28.5, { align: 'center' });
       doc.text(SARPRAS_OFFICIALS.sarprasNbm, 152, signY1 + 28.5, { align: 'center' });
 
-      // HALAMAN 2: BELAKANG (VERIFIKASI PENGECEKAN)
       doc.addPage();
 
       doc.setFont('helvetica', 'bold');
@@ -1819,8 +1832,39 @@
     }
 
     // ==========================================
-    // 7. FILTER, SEARCH & RENDER UI
+    // 7. FILTER TIPE, FILTER STATUS, SEARCH & RENDER UI
     // ==========================================
+    function setTypeFilter(type) {
+      currentTypeFilter = type;
+
+      const styles = {
+        all: {
+          active: "px-2.5 py-2 rounded-xl border-2 border-slate-800 bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition",
+          inactive: "px-2.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition"
+        },
+        dipinjam: {
+          active: "px-2.5 py-2 rounded-xl border-2 border-amber-500 bg-amber-100 text-amber-950 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition",
+          inactive: "px-2.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-amber-50 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition"
+        },
+        sewa: {
+          active: "px-2.5 py-2 rounded-xl border-2 border-purple-500 bg-purple-100 text-purple-950 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition",
+          inactive: "px-2.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-purple-50 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition"
+        },
+        dibeli: {
+          active: "px-2.5 py-2 rounded-xl border-2 border-orange-500 bg-orange-100 text-orange-950 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition",
+          inactive: "px-2.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-orange-50 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition"
+        }
+      };
+
+      ['all', 'dipinjam', 'sewa', 'dibeli'].forEach(t => {
+        const btn = document.getElementById(`type-tab-${t}`);
+        if (!btn) return;
+        btn.className = t === type ? styles[t].active : styles[t].inactive;
+      });
+
+      renderItemList();
+    }
+
     function setFilter(filter) {
       currentFilter = filter;
       ['all', 'belum_diambil', 'belum_dikembalikan', 'selesai', 'sekolah'].forEach(f => {
@@ -1857,6 +1901,21 @@
       document.getElementById('statBelumKembali').innerText = belumKembaliQty;
       document.getElementById('statSelesai').innerText = selesaiQty;
       document.getElementById('statTotalCost').innerText = formatRupiah(totalCost);
+
+      // Update badge jumlah masing-masing tipe barang
+      const pinjamCount = items.filter(i => i.type === 'dipinjam').length;
+      const sewaCount = items.filter(i => i.type === 'sewa').length;
+      const beliCount = items.filter(i => i.type === 'dibeli').length;
+
+      const elAll = document.getElementById('count-type-all');
+      const elPinjam = document.getElementById('count-type-dipinjam');
+      const elSewa = document.getElementById('count-type-sewa');
+      const elBeli = document.getElementById('count-type-dibeli');
+
+      if (elAll) elAll.innerText = items.length;
+      if (elPinjam) elPinjam.innerText = pinjamCount;
+      if (elSewa) elSewa.innerText = sewaCount;
+      if (elBeli) elBeli.innerText = beliCount;
     }
 
     function renderItemList() {
@@ -1865,11 +1924,18 @@
 
       let filtered = items;
 
+      // 1. Filter berdasarkan Tipe Barang (Pinjam / Sewa / Beli)
+      if (currentTypeFilter !== 'all') {
+        filtered = filtered.filter(i => i.type === currentTypeFilter);
+      }
+
+      // 2. Filter berdasarkan Status
       if (currentFilter === 'belum_diambil') filtered = filtered.filter(i => (i.qty_taken || 0) < i.qty && i.status !== 'selesai');
       if (currentFilter === 'belum_dikembalikan') filtered = filtered.filter(i => i.status === 'diambil');
       if (currentFilter === 'selesai') filtered = filtered.filter(i => i.status === 'selesai');
       if (currentFilter === 'sekolah') filtered = filtered.filter(isItemSchoolAsset);
 
+      // 3. Filter berdasarkan Pencarian
       if (searchQuery !== '') {
         filtered = filtered.filter(i => {
           const name = (i.name || '').toLowerCase();
@@ -1883,7 +1949,7 @@
         container.innerHTML = `
           <div class="bg-white rounded-2xl p-8 text-center border border-slate-200">
             <i data-lucide="search-x" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
-            <p class="text-slate-500 font-medium text-sm">Tidak ada barang yang ditemukan.</p>
+            <p class="text-slate-500 font-medium text-sm">Tidak ada barang yang ditemukan pada kategori ini.</p>
           </div>
         `;
         lucide.createIcons();
