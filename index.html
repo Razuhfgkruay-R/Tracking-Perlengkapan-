@@ -3,8 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#FFCB05">
   <title>Event Logistic - IPM SMA Muhammadiyah 2 Depok</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -20,6 +18,9 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Supabase JS Client CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- jsPDF & jsPDF-AutoTable CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col justify-between">
 
@@ -27,9 +28,8 @@
     <!-- SPLASH SCREEN / LOADING OVERLAY -->
     <div id="splashScreen" class="fixed inset-0 bg-ipm text-white flex flex-col items-center justify-between p-8 z-50 transition-opacity duration-500">
       <div class="flex-1 flex flex-col items-center justify-center space-y-6 w-full max-w-xs text-center">
-        <!-- LOGO PNG IPM DARI GITHUB -->
         <div class="w-20 h-20 bg-white/20 rounded-2xl p-2 flex items-center justify-center backdrop-blur-md border border-white/40 shadow-sm animate-pulse">
-          <img id="splashLogoPng" src="logo.png" alt="Logo IPM" class="max-w-full max-h-full object-contain">
+          <img id="splashLogoPng" src="https://upload.wikimedia.org/wikipedia/commons/f/f0/Logo_IPM.png" alt="Logo IPM" class="max-w-full max-h-full object-contain">
         </div>
         <div class="space-y-1">
           <h2 class="text-2xl font-black tracking-tight text-white">IPM Event Logistic</h2>
@@ -48,15 +48,12 @@
     <header class="bg-ipm text-white shadow-md sticky top-0 z-30">
       <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <!-- HEADER LOGO PNG IPM DARI GITHUB -->
           <div class="w-10 h-10 bg-white/20 rounded-xl p-1 flex items-center justify-center border border-white/40 shadow-sm shrink-0">
-            <img id="headerLogoPng" src="logo.png" alt="Logo IPM" class="max-w-full max-h-full object-contain">
+            <img id="headerLogoPng" src="https://upload.wikimedia.org/wikipedia/commons/f/f0/Logo_IPM.png" alt="Logo IPM" class="max-w-full max-h-full object-contain">
           </div>
           <div class="py-0.5 leading-normal">
             <span class="text-[11px] font-black uppercase tracking-wider text-white block leading-tight">IPM SMA Muhammadiyah 2 Depok</span>
-            <!-- TANGGAL DI BAWAH NAMA SEKOLAH -->
             <span id="eventDateBadge" class="text-[10px] font-bold text-white/90 block mt-0.5">Tanggal Event</span>
-            <!-- TEKS NAMA EVENT -->
             <h1 id="eventTitleDisplay" class="text-base sm:text-lg font-black text-white flex items-center gap-1.5 cursor-pointer hover:opacity-90 transition mt-1 pb-1 leading-normal" onclick="openEventSettingsModal()">
               <span id="eventNameText" class="inline-block">Isi Nama Event</span>
               <i id="eventSettingsIcon" data-lucide="settings" class="w-4 h-4 text-white opacity-90 shrink-0"></i>
@@ -66,61 +63,72 @@
         
         <!-- User & Role Badge -->
         <div class="flex items-center gap-2">
-          <div onclick="openUserModal()" class="bg-slate-900 hover:bg-slate-800 text-amber-300 cursor-pointer px-3 py-1.5 rounded-xl text-sm flex items-center gap-2 border border-slate-700 transition shadow-sm">
+          <button type="button" onclick="openUserModal(false)" class="bg-slate-900 hover:bg-slate-800 text-amber-300 cursor-pointer px-3 py-1.5 rounded-xl text-sm flex items-center gap-2 border border-slate-700 transition shadow-sm outline-none">
             <i data-lucide="user-check" class="w-4 h-4 text-amber-300"></i>
-            <span id="currentUserBadge" class="font-bold text-xs sm:text-sm">Anggota: Petugas</span>
-          </div>
+            <span id="currentUserBadge" class="font-bold text-xs sm:text-sm">Pilih Peran</span>
+          </button>
         </div>
       </div>
     </header>
 
     <main class="max-w-4xl mx-auto px-4 py-6 space-y-6">
 
-      <!-- STATS -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
-          <p class="text-xs text-slate-500">Total Barang</p>
-          <p id="statTotal" class="text-2xl font-bold text-slate-800">0</p>
+      <!-- STATS & BIAYA -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
+          <p class="text-[11px] text-slate-500 font-medium">Total Barang</p>
+          <p id="statTotal" class="text-xl font-bold text-slate-800">0</p>
         </div>
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
-          <p class="text-xs text-slate-500">Belum Diambil</p>
-          <p id="statBelumDiambil" class="text-2xl font-bold text-amber-600">0</p>
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
+          <p class="text-[11px] text-slate-500 font-medium">Terambil</p>
+          <p id="statBelumDiambil" class="text-xl font-bold text-amber-600">0</p>
         </div>
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
-          <p class="text-xs text-slate-500">Sedang Digunakan</p>
-          <p id="statBelumKembali" class="text-2xl font-bold text-blue-600">0</p>
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
+          <p class="text-[11px] text-slate-500 font-medium">Sedang Digunakan</p>
+          <p id="statBelumKembali" class="text-xl font-bold text-blue-600">0</p>
         </div>
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
-          <p class="text-xs text-slate-500">Selesai / Dikembalikan</p>
-          <p id="statSelesai" class="text-2xl font-bold text-emerald-600">0</p>
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
+          <p class="text-[11px] text-slate-500 font-medium">Selesai / Dikembalikan</p>
+          <p id="statSelesai" class="text-xl font-bold text-emerald-600">0</p>
+        </div>
+        <div class="bg-gradient-to-br from-amber-50 to-orange-50 p-3 rounded-xl border border-amber-200 shadow-sm text-center col-span-2 md:col-span-1">
+          <p class="text-[11px] text-amber-800 font-bold">Total Biaya Keluar</p>
+          <p id="statTotalCost" class="text-sm font-black text-amber-900 mt-1">Rp0</p>
         </div>
       </div>
 
       <!-- CONTROL BAR: SEARCH, FILTER, & ACTIONS -->
       <div class="space-y-3">
-        <!-- Search Bar -->
         <div class="relative w-full">
           <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
             <i data-lucide="search" class="w-4 h-4"></i>
           </div>
-          <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Cari nama barang, lokasi, atau PIC secara global..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-amber-400 outline-none bg-white shadow-sm">
+          <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Cari nama barang, toko, vendor, atau PIC..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-amber-400 outline-none bg-white shadow-sm">
         </div>
 
         <div class="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center">
           <!-- Filter Tabs -->
-          <div class="flex bg-slate-200 p-1 rounded-xl gap-1 text-xs sm:text-sm font-medium w-full sm:w-auto flex-1">
-            <button onclick="setFilter('all')" id="tab-all" class="flex-1 px-3 py-1.5 rounded-lg bg-white shadow text-slate-900 font-bold text-center transition">Semua</button>
-            <button onclick="setFilter('belum_diambil')" id="tab-belum_diambil" class="flex-1 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 text-center transition">Belum</button>
-            <button onclick="setFilter('belum_dikembalikan')" id="tab-belum_dikembalikan" class="flex-1 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 text-center transition">Proses</button>
-            <button onclick="setFilter('selesai')" id="tab-selesai" class="flex-1 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 text-center transition">Selesai</button>
+          <div class="flex bg-slate-200 p-1 rounded-xl gap-1 text-xs font-medium w-full sm:w-auto flex-1 overflow-x-auto">
+            <button onclick="setFilter('all')" id="tab-all" class="flex-1 px-2.5 py-1.5 rounded-lg bg-white shadow text-slate-900 font-bold text-center transition shrink-0">Semua</button>
+            <button onclick="setFilter('belum_diambil')" id="tab-belum_diambil" class="flex-1 px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 text-center transition shrink-0">Belum</button>
+            <button onclick="setFilter('belum_dikembalikan')" id="tab-belum_dikembalikan" class="flex-1 px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 text-center transition shrink-0">Digunakan</button>
+            <button onclick="setFilter('selesai')" id="tab-selesai" class="flex-1 px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 text-center transition shrink-0">Selesai</button>
+            <button onclick="setFilter('sekolah')" id="tab-sekolah" class="flex-1 px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 text-center transition shrink-0">Aset Sekolah</button>
           </div>
 
-          <!-- Action Buttons: WhatsApp Report & Add Item -->
-          <div class="flex items-center gap-2">
-            <button onclick="shareToWhatsApp()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 shadow-sm transition" title="Kirim rangkuman status ke grup WhatsApp">
-              <i data-lucide="message-circle" class="w-4 h-4"></i> Laporan WA
+          <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="shareToWhatsApp()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 shadow-sm transition" title="Kirim rangkuman status ke grup WhatsApp">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+              </svg> WA
             </button>
-            <button id="btnAddItem" onclick="toggleModal('addItemModal', true)" class="bg-ipm hover:bg-ipm-dark text-slate-900 px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition">
+            <button id="btnSchoolLetterPdf" onclick="generateSchoolPeminjamanPDF()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 shadow-sm transition" title="Cetak Kartu Peminjaman Sarpras Sekolah (Depan & Belakang)">
+              <i data-lucide="file-signature" class="w-4 h-4"></i> Kartu Sarpras
+            </button>
+            <button id="btnExportPdf" onclick="generatePDFReport()" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 shadow-sm transition" title="Cetak Laporan Rekap PDF Internal">
+              <i data-lucide="file-text" class="w-4 h-4"></i> Rekap PDF
+            </button>
+            <button id="btnAddItem" onclick="toggleModal('addItemModal', true)" class="bg-ipm hover:bg-ipm-dark text-slate-900 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-sm transition">
               <i data-lucide="plus" class="w-4 h-4"></i> Tambah
             </button>
           </div>
@@ -136,33 +144,232 @@
       <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
         <div class="flex items-center justify-between">
           <h2 class="text-sm font-bold text-slate-700 flex items-center gap-2">
-            <i data-lucide="history" class="w-4 h-4 text-slate-500"></i> Riwayat Aktivitas Tim
+            <i data-lucide="history" class="w-4 h-4 text-amber-500 animate-pulse"></i> Riwayat Aktivitas Tim
           </h2>
           <div class="flex items-center gap-2">
-            <!-- Tombol Reset Riwayat khusus Admin -->
             <button id="btnClearLog" onclick="openResetModal()" class="hidden bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-bold px-2.5 py-1.5 rounded-lg items-center gap-1 transition">
               <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset Event / Hapus Riwayat
             </button>
-            <!-- Tombol Export Laporan Khusus Admin -->
-            <button id="btnExport" onclick="exportAdminReport()" class="hidden bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-semibold px-3 py-1.5 rounded-lg items-center gap-1.5 transition">
-              <i data-lucide="download" class="w-3.5 h-3.5"></i> Download Laporan
-            </button>
           </div>
         </div>
-        <div id="logList" class="space-y-2 max-h-40 overflow-y-auto text-xs text-slate-600 divide-y divide-slate-100">
-          <!-- Logs -->
+        <div id="logList" class="space-y-2 max-h-48 overflow-y-auto text-xs text-slate-600 divide-y divide-slate-100">
+          <!-- Logs injected in real-time -->
         </div>
       </div>
 
     </main>
   </div>
 
-  <!-- WATERMARK FOOTER -->
   <footer class="w-full text-center py-4 text-xs font-semibold text-slate-400 bg-white border-t border-slate-200 mt-8">
     Powered By Razuhfgkruay • IPM Event Logistic System
   </footer>
 
-  <!-- MODAL 1: OPSI RESET EVENT & HAPUS RIWAYAT -->
+  <!-- ================= MODALS ================= -->
+
+  <!-- MODAL: USER & ROLE ONBOARDING -->
+  <div id="userModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-amber-200">
+      <div class="bg-ipm px-5 py-4 flex justify-between items-center text-slate-900">
+        <div>
+          <h3 class="font-black text-base flex items-center gap-2">
+            <i data-lucide="user-check" class="w-5 h-5"></i> Identitas & Peran Petugas
+          </h3>
+          <p class="text-[11px] font-medium text-slate-800 mt-0.5">Pilih peran petugas sebelum menggunakan sistem.</p>
+        </div>
+        <button id="btnCloseUserModal" type="button" onclick="toggleModal('userModal', false)" class="text-slate-800 hover:text-black hidden">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleSaveUser(event)" class="p-5 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap / Panggilan *</label>
+          <input type="text" id="inputUserName" required placeholder="misal: Yusuf" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-2">Pilih Peran Kamu *</label>
+          <div class="grid grid-cols-2 gap-3">
+            <div id="roleCardMember" onclick="selectRoleOption('member')" class="cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-amber-500 bg-amber-50">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-xs text-slate-900">Petugas / Anggota</span>
+                <i data-lucide="user" class="w-4 h-4 text-amber-600"></i>
+              </div>
+              <p class="text-[10px] text-slate-500 leading-tight">Ambil/Kembalikan barang & upload foto.</p>
+            </div>
+
+            <div id="roleCardAdmin" onclick="selectRoleOption('admin')" class="cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-slate-200 bg-white hover:border-slate-300">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-xs text-slate-700">PIC / Admin</span>
+                <i data-lucide="shield-check" class="w-4 h-4 text-slate-400"></i>
+              </div>
+              <p class="text-[10px] text-slate-500 leading-tight">Kelola event, atur barang & reset data.</p>
+            </div>
+          </div>
+          <input type="hidden" id="inputUserRole" value="member">
+        </div>
+
+        <div id="adminPasswordContainer" class="hidden transition-all pt-1">
+          <label class="block text-xs font-bold text-amber-800 mb-1">Password Otorisasi PIC/Admin *</label>
+          <input type="password" id="inputAdminPassword" placeholder="Masukkan password admin..." class="w-full px-3.5 py-2.5 rounded-xl border border-amber-300 bg-amber-50/50 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
+          <span class="text-[10px] text-slate-500 block mt-1">Sandi khusus untuk hak akses Admin.</span>
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" class="w-full py-2.5 rounded-xl text-sm font-bold text-slate-900 bg-ipm hover:bg-ipm-dark shadow-md transition">
+            Simpan & Lanjutkan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: TAKE ITEM / PENGAMBILAN BERTAHAP + UPDATE HARGA LAPANGAN -->
+  <div id="takeItemModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+      <div class="bg-amber-500 px-5 py-4 text-white flex justify-between items-center">
+        <h3 class="font-bold flex items-center gap-2">
+          <i data-lucide="package-check" class="w-5 h-5"></i> Catat Pengambilan Barang
+        </h3>
+        <button onclick="toggleModal('takeItemModal', false)" class="text-white hover:opacity-80">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form onsubmit="handleTakeItemSubmit(event)" class="p-5 space-y-4">
+        <input type="hidden" id="takeItemId">
+        <div>
+          <p class="text-xs text-slate-500 font-medium">Barang:</p>
+          <p id="takeItemName" class="text-base font-bold text-slate-800">-</p>
+          <p id="takeItemStatusInfo" class="text-xs text-amber-600 font-semibold mt-0.5">Sudah diambil: 0 dari 0 unit</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Jumlah Diambil Kali Ini *</label>
+            <input type="number" id="takeItemCount" min="1" required class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Penerima / Petugas *</label>
+            <input type="text" id="takeItemReceiver" required class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
+          </div>
+        </div>
+
+        <div id="takeItemPriceContainer" class="hidden bg-amber-50 p-3 rounded-xl border border-amber-200 space-y-1">
+          <label class="block text-xs font-bold text-amber-900">Konfirmasi / Update Biaya Keluar (Rp)</label>
+          <input type="number" id="takeItemPrice" min="0" placeholder="Sesuai nota / kwitansi..." class="w-full px-3 py-2 rounded-lg border border-amber-300 text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white">
+          <span class="text-[10px] text-amber-700 block">Ubah nominal di atas jika harga transaksi di lapangan berbeda.</span>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Pemberi / Sumber / Vendor (Opsional)</label>
+          <input type="text" id="takeItemGiver" placeholder="misal: Pak Hendra / Tempat Sewa" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
+          <span class="text-[10px] text-slate-400">Siapa yang menyerahkan/menyewakan barang ini.</span>
+        </div>
+
+        <div class="pt-2 flex gap-2">
+          <button type="button" onclick="toggleModal('takeItemModal', false)" class="w-1/2 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200">Batal</button>
+          <button type="submit" class="w-1/2 py-2 rounded-xl text-sm font-bold text-white bg-amber-500 hover:bg-amber-600">Simpan Pengambilan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: RETURN/FINISH ITEM + KONDISI BARANG + LIVE TIMESTAMP CAMERA -->
+  <div id="returnModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden my-auto">
+      <div id="returnModalHeader" class="bg-emerald-50 px-5 py-4 border-b border-emerald-100 flex justify-between items-center">
+        <h3 id="returnModalTitle" class="font-bold text-emerald-900 flex items-center gap-2">
+          <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i> Pengembalian Barang
+        </h3>
+        <button type="button" onclick="closeReturnModal()" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form id="returnForm" onsubmit="handleReturnSubmit(event)" class="p-5 space-y-4">
+        <input type="hidden" id="returnItemId">
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label id="returnLocationLabel" class="block text-xs font-semibold text-slate-600 mb-1">Lokasi Akhir Pengembalian *</label>
+            <input type="text" id="returnLocation" required class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Kondisi Barang *</label>
+            <select id="returnCondition" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-medium">
+              <option value="Baik">✅ Baik / Sempurna</option>
+              <option value="Rusak Ringan">⚠️ Rusak Ringan</option>
+              <option value="Rusak Berat">❌ Rusak Berat</option>
+              <option value="Hilang">🚨 Hilang</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Catatan Kondisi / Keterangan Tambahan</label>
+          <textarea id="returnNote" rows="2" placeholder="misal: Barang lengkap, kabel agak terlipat." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
+        </div>
+        
+        <!-- OPSI FOTO DENGAN LIVE TIMESTAMP & LOKASI -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-semibold text-slate-600">Foto Bukti (Otomatis Tanggal, Jam & Lokasi)</label>
+            <span id="gpsStatusBadge" class="text-[10px] font-semibold text-amber-600 flex items-center gap-1">
+              <i data-lucide="map-pin" class="w-3 h-3"></i> Mencari GPS...
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 mb-2">
+            <button type="button" onclick="openLiveCamera()" class="cursor-pointer bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition text-center">
+              <i data-lucide="camera" class="w-4 h-4"></i> Buka Kamera
+            </button>
+
+            <label for="returnPhoto" class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition text-center">
+              <i data-lucide="image" class="w-4 h-4"></i> Dari Galeri
+            </label>
+            <input type="file" id="returnPhoto" accept="image/*" class="hidden" onchange="previewPhoto(this)">
+          </div>
+
+          <!-- LIVE CAMERA VIEWFINDER DENGAN OVERLAY REAL-TIME -->
+          <div id="liveCameraContainer" class="hidden relative rounded-xl overflow-hidden border-2 border-emerald-500 bg-black shadow-md mt-2">
+            <video id="liveCameraVideo" autoplay playsinline muted class="w-full max-h-64 object-cover"></video>
+            
+            <!-- Live Watermark HUD Preview -->
+            <div class="absolute bottom-12 left-2 right-2 bg-black/65 backdrop-blur-xs text-white px-2.5 py-1.5 rounded-lg border-l-4 border-amber-400 pointer-events-none select-none">
+              <p id="liveOverlayTime" class="text-[11px] font-bold text-amber-300 leading-tight">--</p>
+              <p id="liveOverlayLocation" class="text-[10px] text-white/95 leading-snug mt-0.5 line-clamp-2">Mendeteksi lokasi...</p>
+              <p id="liveOverlayMeta" class="text-[9px] text-white/75 mt-0.5">IPM SMA Muhammadiyah 2 Depok</p>
+            </div>
+
+            <!-- Tombol Kontrol Kamera -->
+            <div class="absolute bottom-2 left-2 right-2 flex items-center justify-between gap-2">
+              <button type="button" onclick="switchCameraFacing()" class="bg-slate-900/80 hover:bg-slate-900 text-white px-2.5 py-1.5 rounded-lg text-[11px] font-semibold flex items-center gap-1 border border-white/20">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Putar
+              </button>
+              <button type="button" onclick="captureLivePhoto()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 shadow-lg">
+                <i data-lucide="aperture" class="w-4 h-4"></i> Jepret Foto
+              </button>
+              <button type="button" onclick="stopLiveCamera()" class="bg-rose-600/90 hover:bg-rose-700 text-white px-2.5 py-1.5 rounded-lg text-[11px] font-semibold">
+                Tutup
+              </button>
+            </div>
+          </div>
+
+          <!-- PREVIEW HASIL FOTO BER-WATERMARK -->
+          <div id="photoPreviewContainer" class="hidden relative mt-2 border-2 border-dashed border-emerald-300 rounded-xl p-2 text-center bg-emerald-50/50">
+            <img id="photoPreviewImg" src="" alt="Preview Bukti" class="max-h-52 mx-auto rounded-lg object-contain shadow-sm">
+            <p class="text-[10px] text-emerald-700 font-bold mt-1.5">✔ Bukti Foto Lengkap dengan Tanggal, Jam & Lokasi</p>
+          </div>
+        </div>
+
+        <div class="pt-2 flex gap-2">
+          <button type="button" onclick="closeReturnModal()" class="w-1/2 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200">Batal</button>
+          <button type="submit" id="returnSubmitBtn" class="w-1/2 py-2 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700">Tandai Selesai</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: RESET EVENT -->
   <div id="resetModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden p-5 space-y-4">
       <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto">
@@ -172,24 +379,21 @@
         <h3 class="font-bold text-slate-800 text-base">Reset Data / Ganti Event</h3>
         <p class="text-xs text-slate-500 mt-1 leading-relaxed">Pilih tindakan untuk mempersiapkan sistem ke event berikutnya:</p>
       </div>
-
       <div class="space-y-2 pt-2">
         <button onclick="handleClearLogOnly()" class="w-full py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center justify-between transition">
           <span class="flex items-center gap-2"><i data-lucide="eraser" class="w-4 h-4 text-amber-500"></i> Hapus Riwayat Log Saja</span>
           <span class="text-[10px] text-slate-400 font-normal">Barang tetap disimpan</span>
         </button>
-
         <button onclick="triggerFullResetConfirmation()" class="w-full py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center justify-between transition shadow-sm">
           <span class="flex items-center gap-2"><i data-lucide="trash-2" class="w-4 h-4"></i> Reset Total Event Baru</span>
           <span class="text-[10px] text-rose-200 font-normal">Kosongkan barang & log (0)</span>
         </button>
       </div>
-
       <button onclick="toggleModal('resetModal', false)" class="w-full py-2 rounded-xl text-xs font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200 transition">Batal</button>
     </div>
   </div>
 
-  <!-- MODAL 2: CUSTOM FINAL CONFIRMATION -->
+  <!-- MODAL: KONFIRMASI FINAL RESET -->
   <div id="finalConfirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-[60] p-4">
     <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden p-5 text-center space-y-4 border border-rose-100">
       <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto animate-bounce">
@@ -198,7 +402,7 @@
       <div>
         <h3 class="font-black text-rose-600 text-base">PERINGATAN TERAKHIR!</h3>
         <p class="text-xs text-slate-600 mt-2 leading-relaxed">
-          Apakah kamu yakin ingin <b>MENGHAPUS SEMUA BARANG</b> dan <b>MENGOSONGKAN RIWAYAT</b> untuk memulai event baru? Total barang akan kembali ke angka 0.
+          Apakah kamu yakin ingin <b>MENGHAPUS SEMUA BARANG</b> dan <b>MENGOSONGKAN RIWAYAT</b> untuk memulai event baru?
         </p>
       </div>
       <div class="flex gap-2 pt-2">
@@ -208,7 +412,7 @@
     </div>
   </div>
 
-  <!-- MODAL: KUSTOM ALERT / INFO -->
+  <!-- MODAL: ALERT -->
   <div id="alertModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
     <div class="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden p-5 text-center space-y-4">
       <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto">
@@ -222,51 +426,7 @@
     </div>
   </div>
 
-  <!-- MODAL: PENGATURAN IDENTITAS & PERAN USER -->
-  <div id="userModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
-      <div class="bg-ipm-light px-5 py-4 border-b border-amber-200 flex justify-between items-center">
-        <h3 class="font-bold text-slate-900 flex items-center gap-2">
-          <i data-lucide="user-cog" class="w-5 h-5 text-amber-600"></i> Identitas & Peran Petugas
-        </h3>
-        <button onclick="toggleModal('userModal', false)" class="text-slate-400 hover:text-slate-600">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-      <form onsubmit="handleSaveUser(event)" class="p-5 space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Kamu *</label>
-          <input type="text" id="inputUserName" required placeholder="misal: Petugas Logistik" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-2">Pilih Peran / Hak Akses *</label>
-          <div class="grid grid-cols-2 gap-3">
-            <div id="roleCardAdmin" onclick="selectRoleOption('admin')" class="cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-slate-200 bg-white hover:border-slate-300">
-              <div class="flex items-center justify-between mb-1">
-                <span class="font-bold text-xs text-slate-700">PIC / Admin</span>
-                <i data-lucide="shield-check" class="w-4 h-4 text-slate-400"></i>
-              </div>
-              <p class="text-[10px] text-slate-500 leading-tight">Berhak Mengontrol Secara Keseluruhan.</p>
-            </div>
-            <div id="roleCardMember" onclick="selectRoleOption('member')" class="cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-amber-500 bg-amber-50">
-              <div class="flex items-center justify-between mb-1">
-                <span class="font-bold text-xs text-slate-900">Anggota</span>
-                <i data-lucide="user" class="w-4 h-4 text-amber-600"></i>
-              </div>
-              <p class="text-[10px] text-slate-500 leading-tight">Update status & foto barang.</p>
-            </div>
-          </div>
-          <input type="hidden" id="inputUserRole" value="member">
-        </div>
-        <div class="pt-2 flex gap-2">
-          <button type="button" onclick="toggleModal('userModal', false)" class="w-1/2 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200">Batal</button>
-          <button type="submit" class="w-1/2 py-2 rounded-xl text-sm font-bold text-slate-900 bg-ipm hover:bg-ipm-dark">Simpan Identitas</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL: PENGATURAN EVENT (ADMIN ONLY) -->
+  <!-- MODAL: EVENT SETTINGS -->
   <div id="eventSettingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
       <div class="bg-ipm-light px-5 py-4 border-b border-amber-200 flex justify-between items-center">
@@ -294,7 +454,7 @@
     </div>
   </div>
 
-  <!-- MODAL: TAMBAH BARANG -->
+  <!-- MODAL: ADD ITEM -->
   <div id="addItemModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
       <div class="bg-slate-50 px-5 py-4 border-b border-slate-100 flex justify-between items-center">
@@ -306,96 +466,106 @@
       <form id="addItemForm" onsubmit="handleAddItem(event)" class="p-5 space-y-4">
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Barang *</label>
-          <input type="text" id="itemName" required placeholder="misal: Sound System Set" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
+          <input type="text" id="itemName" oninput="autoDetectSchoolAsset()" required placeholder="misal: Sound System Set / Kabel HDMI" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Tipe Barang</label>
-            <select id="itemType" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Tipe Barang *</label>
+            <select id="itemType" onchange="handleItemTypeChange(this.value)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
               <option value="dipinjam">Pinjam</option>
+              <option value="sewa">Sewa</option>
               <option value="dibeli">Beli</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Jumlah (Qty)</label>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Jumlah Total (Qty) *</label>
             <input type="number" id="itemQty" min="1" value="1" required class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
           </div>
         </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Lokasi Asal / Tempat Beli *</label>
-          <input type="text" id="itemOrigin" required placeholder="misal: Gudang Utama / Toko ATK" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
+
+        <!-- OPSI ASET SEKOLAH -->
+        <div id="schoolItemOption" class="bg-blue-50/70 border border-blue-200 p-3 rounded-xl flex items-center justify-between">
+          <div>
+            <span class="block text-xs font-bold text-blue-900">Aset / Fasilitas Sekolah</span>
+            <span class="text-[10px] text-blue-700 block">Otomatis masuk ke Kartu Peminjaman Sarpras.</span>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="itemIsSchoolAsset" class="sr-only peer">
+            <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
         </div>
+
+        <div id="priceContainer" class="hidden">
+          <label id="priceLabel" class="block text-xs font-bold text-slate-700 mb-1">Harga / Biaya (Rp)</label>
+          <input type="number" id="itemPrice" min="0" placeholder="misal: 150000" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
+          <span id="priceSub" class="text-[10px] text-slate-400 block mt-0.5">Total nominal atau perkiraan harga/biaya sewa.</span>
+        </div>
+
+        <div>
+          <label id="originLabel" class="block text-xs font-semibold text-slate-600 mb-1">Lokasi Asal / Pemilik *</label>
+          <input type="text" id="itemOrigin" oninput="autoDetectSchoolAsset()" required placeholder="misal: Gudang Sekolah / Ruang OSIS" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Target Waktu (Deadline)</label>
-            <input type="text" id="itemDeadline" placeholder="misal: Sabtu, 14:00 WIB" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
+            <label id="deadlineLabel" class="block text-xs font-semibold text-slate-600 mb-1">Batas Waktu Pinjam</label>
+            <input type="text" id="itemDeadline" placeholder="misal: Sabtu 31 Maret 2026" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Kontak Vendor/Pemilik (WA)</label>
-            <input type="text" id="itemContact" placeholder="misal: Pak Ali (08123...)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
+            <label id="contactLabel" class="block text-xs font-semibold text-slate-600 mb-1">Kontak Pemilik / Vendor (No WA)</label>
+            <input type="text" id="itemContact" placeholder="misal: 081234567890" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-amber-400 outline-none">
           </div>
         </div>
+
         <div class="pt-2 flex gap-2">
           <button type="button" onclick="toggleModal('addItemModal', false)" class="w-1/2 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200">Batal</button>
-          <button type="submit" class="w-1/2 py-2 rounded-xl text-sm font-bold text-slate-900 bg-ipm hover:bg-ipm-dark">Simpan Barang</button>
+          <button type="submit" id="btnSubmitItem" class="w-1/2 py-2 rounded-xl text-sm font-bold text-slate-900 bg-ipm hover:bg-ipm-dark">Simpan Barang</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL: PENYELESAIAN -->
-  <div id="returnModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
-      <div id="returnModalHeader" class="bg-emerald-50 px-5 py-4 border-b border-emerald-100 flex justify-between items-center">
-        <h3 id="returnModalTitle" class="font-bold text-emerald-900 flex items-center gap-2">
-          <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i> Pengembalian Barang
-        </h3>
-        <button onclick="toggleModal('returnModal', false)" class="text-slate-400 hover:text-slate-600">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-      <form id="returnForm" onsubmit="handleReturnSubmit(event)" class="p-5 space-y-4">
-        <input type="hidden" id="returnItemId">
-        <div>
-          <label id="returnLocationLabel" class="block text-xs font-semibold text-slate-600 mb-1">Lokasi Akhir Pengembalian *</label>
-          <input type="text" id="returnLocation" required class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
-          <span id="returnLocationSub" class="text-[10px] text-slate-500">Ubah jika dikembalikan ke tempat berbeda dari asal.</span>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Catatan Kondisi / Keterangan</label>
-          <textarea id="returnNote" rows="2" placeholder="misal: Barang lengkap, aman." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Upload Foto Bukti (Opsional)</label>
-          <input type="file" id="returnPhoto" accept="image/*" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
-        </div>
-        <div class="pt-2 flex gap-2">
-          <button type="button" onclick="toggleModal('returnModal', false)" class="w-1/2 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200">Batal</button>
-          <button type="submit" id="returnSubmitBtn" class="w-1/2 py-2 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700">Tandai Selesai</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- JAVASCRIPT LOGIC WITH SUPABASE -->
+  <!-- ================= APPLICATION LOGIC ================= -->
   <script>
-    // 1. KONFIGURASI SUPABASE
-    const SUPABASE_URL = 'https://uqprdbjnjmwtazgxdaah.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_3Iy_uZDe1GuiuWM_4FWzmA_5AC53zTj';
+    // ==========================================
+    // 1. KONFIGURASI & STATE APLIKASI
+    // ==========================================
+    const SUPABASE_URL = 'https://xhytkpdgzhuigvmlywfj.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_0-HI3kgjmDqzoi8jjfSS4w_e0xm9fWg';
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    const ADMIN_PASSWORD = "aku_admin";
+
+    // Data Pejabat Resmi Sarpras (Sesuai Kartu Inventaris SMA Muhammadiyah Beji)
+    const SARPRAS_OFFICIALS = {
+      schoolName: 'SMA MUHAMMADIYAH BEJI',
+      academicYear: 'TAHUN PELAJARAN 2026 / 2027',
+      principalName: 'Sri Meiliyanti, S.Pd.',
+      principalNbm: 'NBM. 1254043',
+      sarprasName: 'Ajeng D. Septiyanti, S.T.,M.Pd.Gr.',
+      sarprasNbm: 'NBM. 1425225'
+    };
+
     let eventInfo = { name: 'Isi Nama Event', date: 'Tanggal Event' };
-    
-    // DEFAULT ROLE = MEMBER (ANGGOTA) UNTUK PENGGUNA BARU
-    let userRole = localStorage.getItem('ipm_logistic_role') || 'member';
-    let currentUserName = localStorage.getItem('ipm_logistic_username') || 'Petugas IPM';
+    let userRole = localStorage.getItem('ipm_logistic_role') || null;
+    let currentUserName = localStorage.getItem('ipm_logistic_username') || null;
 
     let items = [];
     let logs = [];
-
+    let selectedImageDataUrl = null;
     let currentFilter = 'all';
     let searchQuery = '';
 
+    // State Live Camera & Timestamp Location
+    let cameraStream = null;
+    let currentFacingMode = 'environment';
+    let liveOverlayInterval = null;
+    let currentGeoText = 'Mendeteksi lokasi GPS...';
+    let currentGeoCoords = '';
+
+    // ==========================================
+    // 2. INISIALISASI & SINKRONISASI REAL-TIME
+    // ==========================================
     document.addEventListener('DOMContentLoaded', async () => {
       setTimeout(() => {
         const fillBar = document.getElementById('loadingBarFill');
@@ -406,54 +576,38 @@
         const splash = document.getElementById('splashScreen');
         if (splash) {
           splash.classList.add('opacity-0', 'pointer-events-none');
-          setTimeout(() => { splash.style.display = 'none'; }, 500);
+          setTimeout(() => {
+            splash.style.display = 'none';
+            if (!currentUserName || !userRole) {
+              openUserModal(true);
+            }
+          }, 500);
         }
       }, 1000);
 
       updateRoleUI();
-      
-      // Ambil data event, item & logs dari Supabase
-      await fetchAllDataFromCloud();
 
-      // Realtime Listener untuk Items
+      await Promise.all([
+        fetchEventConfig(),
+        fetchItemsFromCloud(),
+        fetchLogsFromCloud()
+      ]);
+
       supabaseClient
         .channel('public:event_items')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'event_items' }, () => {
-          fetchItemsFromCloud();
-        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'event_items' }, () => fetchItemsFromCloud())
         .subscribe();
 
-      // Realtime Listener untuk Logs
-      supabaseClient
-        .channel('public:event_logs')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'event_logs' }, () => {
-          fetchLogsFromCloud();
-        })
-        .subscribe();
-
-      // Realtime Listener untuk Event Config
       supabaseClient
         .channel('public:event_config')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'event_config' }, () => {
-          fetchEventConfig();
-        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'event_config' }, () => fetchEventConfig())
         .subscribe();
 
-      // SMART AUTO-SYNC UNTUK APK / PWA (Setiap kali aplikasi difokuskan kembali)
-      window.addEventListener('focus', fetchAllDataFromCloud);
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') fetchAllDataFromCloud();
-      });
-
-      // BACKGROUND POLLING FALLBACK (Setiap 8 detik)
-      setInterval(fetchAllDataFromCloud, 8000);
+      supabaseClient
+        .channel('public:event_logs')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'event_logs' }, () => fetchLogsFromCloud())
+        .subscribe();
     });
-
-    async function fetchAllDataFromCloud() {
-      await fetchEventConfig();
-      await fetchItemsFromCloud();
-      await fetchLogsFromCloud();
-    }
 
     async function fetchEventConfig() {
       const { data, error } = await supabaseClient
@@ -480,48 +634,25 @@
       }
     }
 
-    // MENGAMBIL RIWAYAT LOG DARI SUPABASE CLOUD (REALTIME MULTI-DEVICE)
     async function fetchLogsFromCloud() {
       const { data, error } = await supabaseClient
         .from('event_logs')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
         .limit(30);
 
       if (!error && data) {
-        logs = data.map(l => ({
-          time: new Date(l.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-          text: l.text
-        }));
+        logs = data;
         renderLogs();
       }
     }
 
+    // ==========================================
+    // 3. HELPER, GPS & TIMESTAMP WATERMARK
+    // ==========================================
     function updateEventHeader() {
       document.getElementById('eventNameText').innerText = eventInfo.name;
       document.getElementById('eventDateBadge').innerText = eventInfo.date;
-    }
-
-    function updateRoleUI() {
-      const badge = document.getElementById('currentUserBadge');
-      const btnAdd = document.getElementById('btnAddItem');
-      const settingsIcon = document.getElementById('eventSettingsIcon');
-      const btnExport = document.getElementById('btnExport');
-      const btnClearLog = document.getElementById('btnClearLog');
-      
-      if (userRole === 'admin') {
-        badge.innerText = `PIC: ${currentUserName}`;
-        if(btnAdd) btnAdd.style.display = 'flex';
-        if(settingsIcon) settingsIcon.style.display = 'inline-block';
-        if(btnExport) btnExport.style.display = 'flex';
-        if(btnClearLog) btnClearLog.style.display = 'flex';
-      } else {
-        badge.innerText = `Anggota: ${currentUserName}`;
-        if(btnAdd) btnAdd.style.display = 'none';
-        if(settingsIcon) settingsIcon.style.display = 'none';
-        if(btnExport) btnExport.style.display = 'none';
-        if(btnClearLog) btnClearLog.style.display = 'none';
-      }
     }
 
     function showAlert(title, message) {
@@ -530,65 +661,368 @@
       toggleModal('alertModal', true);
     }
 
-    function openUserModal() {
-      document.getElementById('inputUserName').value = currentUserName;
-      selectRoleOption(userRole);
-      toggleModal('userModal', true);
+    function toggleModal(modalId, show) {
+      const modal = document.getElementById(modalId);
+      if (!modal) return;
+      modal.classList.toggle('hidden', !show);
+      modal.classList.toggle('flex', show);
     }
 
-    // FUNGSI PERBAIKAN: DENGAN AMAN MENGUBAH TAMPILAN OPSI ROLE
+    function formatRupiah(amount) {
+      if (!amount || isNaN(amount)) return 'Rp0';
+      return 'Rp' + parseFloat(amount).toLocaleString('id-ID');
+    }
+
+    function isItemSchoolAsset(item) {
+      if (item.type !== 'dipinjam') return false;
+      const originLower = (item.origin || '').toLowerCase();
+      const noteLower = (item.note || '').toLowerCase();
+      const keywords = ['sekolah', 'osis', 'gudang', 'lab', 'ruang', 'kelas', 'tu', 'perpustakaan', 'lapangan', 'aset sekolah'];
+      return keywords.some(kw => originLower.includes(kw) || noteLower.includes(kw));
+    }
+
+    function formatWaUrl(phoneInput, itemName) {
+      if (!phoneInput || phoneInput.trim() === '-' || phoneInput.trim() === '') return null;
+      let cleanNum = phoneInput.replace(/[^0-9]/g, '');
+      if (cleanNum.startsWith('0')) cleanNum = '62' + cleanNum.substring(1);
+      else if (cleanNum.startsWith('8')) cleanNum = '62' + cleanNum;
+      if (cleanNum.length < 9) return null;
+
+      const message = `Halo, saya ${currentUserName || 'Petugas'} dari Tim Perlengkapan IPM SMA Muhammadiyah 2 Depok (Event: ${eventInfo.name}). Ingin mengonfirmasi mengenai barang/perlengkapan: *${itemName}*. Terima kasih!`;
+      return `https://wa.me/${cleanNum}?text=${encodeURIComponent(message)}`;
+    }
+
+    function getFormattedTimestamp() {
+      const now = new Date();
+      const datePart = now.toLocaleDateString('id-ID', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+      const timePart = now.toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      }).replace(/\./g, ':');
+      return `${datePart} • ${timePart} WIB`;
+    }
+
+    // Ambil GPS & Nama Alamat Jalan (Reverse Geocoding)
+    function fetchLiveLocation() {
+      const badge = document.getElementById('gpsStatusBadge');
+      if (!navigator.geolocation) {
+        currentGeoText = 'GPS tidak didukung browser';
+        if (badge) badge.innerHTML = `<i data-lucide="map-pin-off" class="w-3 h-3"></i> GPS Tidak Tersedia`;
+        lucide.createIcons();
+        return;
+      }
+
+      if (badge) {
+        badge.className = "text-[10px] font-semibold text-amber-600 flex items-center gap-1";
+        badge.innerHTML = `<i data-lucide="map-pin" class="w-3 h-3 animate-bounce"></i> Mengunci GPS...`;
+        lucide.createIcons();
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const lat = pos.coords.latitude.toFixed(6);
+          const lon = pos.coords.longitude.toFixed(6);
+          currentGeoCoords = `${lat}, ${lon}`;
+          currentGeoText = `Koordinat: ${currentGeoCoords}`;
+
+          if (badge) {
+            badge.className = "text-[10px] font-bold text-emerald-700 flex items-center gap-1";
+            badge.innerHTML = `<i data-lucide="map-pin" class="w-3 h-3"></i> GPS Terkunci`;
+            lucide.createIcons();
+          }
+
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.address) {
+                const a = data.address;
+                const parts = [
+                  a.road || a.pedestrian || a.building || a.amenity,
+                  a.village || a.suburb || a.neighbourhood,
+                  a.city_district || a.city || a.town
+                ].filter(Boolean);
+                if (parts.length > 0) {
+                  currentGeoText = `${parts.join(', ')} (${currentGeoCoords})`;
+                }
+              }
+            }
+          } catch (e) {
+            // Tetap pakai koordinat jika offline
+          }
+          updateLiveOverlayUI();
+        },
+        () => {
+          const fallbackLoc = document.getElementById('returnLocation')?.value || 'SMA Muhammadiyah 2 Depok';
+          currentGeoText = `Lokasi Manual: ${fallbackLoc}`;
+          if (badge) {
+            badge.className = "text-[10px] font-semibold text-slate-500 flex items-center gap-1";
+            badge.innerHTML = `<i data-lucide="map-pin" class="w-3 h-3"></i> Izin GPS Ditolak (Pakai Teks)`;
+            lucide.createIcons();
+          }
+          updateLiveOverlayUI();
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 }
+      );
+    }
+
+    function updateLiveOverlayUI() {
+      const timeEl = document.getElementById('liveOverlayTime');
+      const locEl = document.getElementById('liveOverlayLocation');
+      const metaEl = document.getElementById('liveOverlayMeta');
+
+      if (timeEl) timeEl.innerText = getFormattedTimestamp();
+      if (locEl) locEl.innerText = currentGeoText;
+      if (metaEl) metaEl.innerText = `${eventInfo.name} • Petugas: ${currentUserName || '-'}`;
+    }
+
+    // Membakar Watermark Tanggal, Jam & Lokasi ke Canvas Gambar
+    function stampWatermarkAndCompress(sourceElement, srcWidth, srcHeight, maxWidth = 1024, quality = 0.78) {
+      let width = srcWidth;
+      let height = srcHeight;
+
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+
+      // Gambar foto asli
+      ctx.drawImage(sourceElement, 0, 0, width, height);
+
+      // Skala font proporsional terhadap lebar foto
+      const scale = Math.max(width / 800, 0.65);
+      const pad = Math.round(16 * scale);
+      const boxHeight = Math.round(92 * scale);
+      const boxY = height - boxHeight - pad;
+      const boxX = pad;
+      const boxW = width - pad * 2;
+
+      // Kotak latar belakang semi-transparan di bawah
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+      ctx.beginPath();
+      ctx.roundRect(boxX, boxY, boxW, boxHeight, Math.round(10 * scale));
+      ctx.fill();
+
+      // Garis aksen kuning IPM di sisi kiri kotak
+      ctx.fillStyle = '#FFCB05';
+      ctx.fillRect(boxX, boxY, Math.round(6 * scale), boxHeight);
+
+      const textX = boxX + Math.round(16 * scale);
+
+      // Baris 1: Tanggal & Jam
+      ctx.fillStyle = '#FCD34D';
+      ctx.font = `bold ${Math.round(18 * scale)}px sans-serif`;
+      ctx.fillText(getFormattedTimestamp(), textX, boxY + Math.round(25 * scale));
+
+      // Baris 2: Lokasi GPS / Alamat (dipotong rapi jika terlalu panjang)
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = `600 ${Math.round(14 * scale)}px sans-serif`;
+      let locLine = currentGeoText;
+      const maxTextWidth = boxW - Math.round(28 * scale);
+      while (ctx.measureText(locLine).width > maxTextWidth && locLine.length > 10) {
+        locLine = locLine.slice(0, -4) + '...';
+      }
+      ctx.fillText(locLine, textX, boxY + Math.round(50 * scale));
+
+      // Baris 3: Identitas Event & Petugas
+      ctx.fillStyle = 'rgba(226, 232, 240, 0.88)';
+      ctx.font = `normal ${Math.round(13 * scale)}px sans-serif`;
+      ctx.fillText(`IPM SMA Muhammadiyah 2 Depok • ${eventInfo.name} • Oleh: ${currentUserName || 'Petugas'}`, textX, boxY + Math.round(74 * scale));
+
+      return canvas.toDataURL('image/jpeg', quality);
+    }
+
+    // Kontrol Live Camera
+    async function openLiveCamera() {
+      const container = document.getElementById('liveCameraContainer');
+      const video = document.getElementById('liveCameraVideo');
+
+      stopLiveCamera();
+      fetchLiveLocation();
+
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: currentFacingMode,
+            width: { ideal: 1280 },
+            height: { ideal: 960 }
+          },
+          audio: false
+        });
+
+        video.srcObject = cameraStream;
+        container.classList.remove('hidden');
+        document.getElementById('photoPreviewContainer').classList.add('hidden');
+
+        updateLiveOverlayUI();
+        liveOverlayInterval = setInterval(updateLiveOverlayUI, 1000);
+        lucide.createIcons();
+      } catch (err) {
+        showAlert("Kamera Tidak Dapat Diakses", "Pastikan izin kamera di browser diizinkan atau gunakan tombol 'Dari Galeri'.");
+      }
+    }
+
+    function switchCameraFacing() {
+      currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+      openLiveCamera();
+    }
+
+    function stopLiveCamera() {
+      if (liveOverlayInterval) {
+        clearInterval(liveOverlayInterval);
+        liveOverlayInterval = null;
+      }
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      const container = document.getElementById('liveCameraContainer');
+      if (container) container.classList.add('hidden');
+    }
+
+    function captureLivePhoto() {
+      const video = document.getElementById('liveCameraVideo');
+      if (!video || !video.videoWidth) return;
+
+      selectedImageDataUrl = stampWatermarkAndCompress(video, video.videoWidth, video.videoHeight);
+
+      const imgPreview = document.getElementById('photoPreviewImg');
+      const previewContainer = document.getElementById('photoPreviewContainer');
+      if (imgPreview && previewContainer) {
+        imgPreview.src = selectedImageDataUrl;
+        previewContainer.classList.remove('hidden');
+      }
+
+      stopLiveCamera();
+    }
+
+    function previewPhoto(inputElement) {
+      if (inputElement.files && inputElement.files[0]) {
+        stopLiveCamera();
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            selectedImageDataUrl = stampWatermarkAndCompress(img, img.width, img.height);
+            const imgPreview = document.getElementById('photoPreviewImg');
+            const previewContainer = document.getElementById('photoPreviewContainer');
+            if (imgPreview && previewContainer) {
+              imgPreview.src = selectedImageDataUrl;
+              previewContainer.classList.remove('hidden');
+            }
+          };
+          img.src = event.target.result;
+        };
+        reader.readAsDataURL(inputElement.files[0]);
+      }
+    }
+
+    // ==========================================
+    // 4. OTORISASI PERAN & PENGATURAN EVENT
+    // ==========================================
+    function updateRoleUI() {
+      const badge = document.getElementById('currentUserBadge');
+      const btnAdd = document.getElementById('btnAddItem');
+      const settingsIcon = document.getElementById('eventSettingsIcon');
+      const btnClearLog = document.getElementById('btnClearLog');
+
+      if (userRole === 'admin') {
+        badge.innerText = `PIC: ${currentUserName}`;
+        if (btnAdd) btnAdd.style.display = 'flex';
+        if (settingsIcon) settingsIcon.style.display = 'inline-block';
+        if (btnClearLog) btnClearLog.style.display = 'flex';
+      } else if (userRole === 'member') {
+        badge.innerText = `Petugas: ${currentUserName}`;
+        if (btnAdd) btnAdd.style.display = 'none';
+        if (settingsIcon) settingsIcon.style.display = 'none';
+        if (btnClearLog) btnClearLog.style.display = 'none';
+      } else {
+        badge.innerText = `Pilih Peran Kamu`;
+        if (btnAdd) btnAdd.style.display = 'none';
+        if (settingsIcon) settingsIcon.style.display = 'none';
+        if (btnClearLog) btnClearLog.style.display = 'none';
+      }
+    }
+
+    function openUserModal(isFirstTime = false) {
+      document.getElementById('inputUserName').value = currentUserName || '';
+      document.getElementById('inputAdminPassword').value = '';
+
+      const btnClose = document.getElementById('btnCloseUserModal');
+      if (btnClose) {
+        btnClose.classList.toggle('hidden', isFirstTime && (!currentUserName || !userRole));
+      }
+
+      toggleModal('userModal', true);
+      setTimeout(() => selectRoleOption(userRole || 'member'), 50);
+    }
+
     function selectRoleOption(role) {
-      document.getElementById('inputUserRole').value = role;
+      const inputRole = document.getElementById('inputUserRole');
       const cardAdmin = document.getElementById('roleCardAdmin');
       const cardMember = document.getElementById('roleCardMember');
+      const pwContainer = document.getElementById('adminPasswordContainer');
 
       if (!cardAdmin || !cardMember) return;
+      if (inputRole) inputRole.value = role;
 
-      const iconAdmin = cardAdmin.querySelector('[data-lucide], svg, i');
-      const iconMember = cardMember.querySelector('[data-lucide], svg, i');
-      const spanAdmin = cardAdmin.querySelector('span');
-      const spanMember = cardMember.querySelector('span');
+      const activeCardClass = "cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-amber-500 bg-amber-50";
+      const inactiveCardClass = "cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-slate-200 bg-white hover:border-slate-300";
 
-      if (role === 'admin') {
-        cardAdmin.className = "cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-amber-500 bg-amber-50";
-        if (spanAdmin) spanAdmin.className = "font-bold text-xs text-slate-900";
-        if (iconAdmin) iconAdmin.setAttribute('class', 'w-4 h-4 text-amber-600');
+      cardAdmin.className = role === 'admin' ? activeCardClass : inactiveCardClass;
+      cardMember.className = role === 'member' ? activeCardClass : inactiveCardClass;
 
-        cardMember.className = "cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-slate-200 bg-white hover:border-slate-300";
-        if (spanMember) spanMember.className = "font-bold text-xs text-slate-700";
-        if (iconMember) iconMember.setAttribute('class', 'w-4 h-4 text-slate-400');
-      } else {
-        cardMember.className = "cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-amber-500 bg-amber-50";
-        if (spanMember) spanMember.className = "font-bold text-xs text-slate-900";
-        if (iconMember) iconMember.setAttribute('class', 'w-4 h-4 text-amber-600');
+      cardAdmin.querySelector('span').className = `font-bold text-xs ${role === 'admin' ? 'text-slate-900' : 'text-slate-700'}`;
+      cardAdmin.querySelector('i').className = `w-4 h-4 ${role === 'admin' ? 'text-amber-600' : 'text-slate-400'}`;
 
-        cardAdmin.className = "cursor-pointer border-2 rounded-xl p-3 flex flex-col justify-between transition border-slate-200 bg-white hover:border-slate-300";
-        if (spanAdmin) spanAdmin.className = "font-bold text-xs text-slate-700";
-        if (iconAdmin) iconAdmin.setAttribute('class', 'w-4 h-4 text-slate-400');
-      }
+      cardMember.querySelector('span').className = `font-bold text-xs ${role === 'member' ? 'text-slate-900' : 'text-slate-700'}`;
+      cardMember.querySelector('i').className = `w-4 h-4 ${role === 'member' ? 'text-amber-600' : 'text-slate-400'}`;
+
+      if (pwContainer) pwContainer.classList.toggle('hidden', role !== 'admin');
     }
 
     function handleSaveUser(e) {
       e.preventDefault();
       const newName = document.getElementById('inputUserName').value.trim();
-      const newRole = document.getElementById('inputUserRole').value;
+      const targetRole = document.getElementById('inputUserRole').value;
+      const inputPw = document.getElementById('inputAdminPassword').value;
 
-      if (newName) {
-        currentUserName = newName;
-        userRole = newRole;
-        localStorage.setItem('ipm_logistic_username', currentUserName);
-        localStorage.setItem('ipm_logistic_role', userRole);
+      if (!newName) return;
 
-        updateRoleUI();
-        addLog(`Memperbarui profil ke <b>${userRole === 'admin' ? 'PIC' : 'Anggota'} (${currentUserName})</b>`);
-        toggleModal('userModal', false);
-        renderApp();
+      if (targetRole === 'admin' && inputPw !== ADMIN_PASSWORD) {
+        showAlert("Akses Ditolak", "Password PIC / Admin salah! Masukkan password yang benar untuk mengakses mode Admin.");
+        return;
+      }
+
+      currentUserName = newName;
+      userRole = targetRole;
+      localStorage.setItem('ipm_logistic_username', currentUserName);
+      localStorage.setItem('ipm_logistic_role', userRole);
+
+      updateRoleUI();
+      addLogToCloud(`Memasuki sistem sebagai <b>${userRole === 'admin' ? 'PIC/Admin' : 'Petugas/Anggota'} (${currentUserName})</b>`);
+      toggleModal('userModal', false);
+      renderApp();
+
+      if (userRole === 'admin') {
+        showAlert("Akses PIC Aktif", `Selamat bertugas Admin ${currentUserName}. Hak akses penuh logistik telah diaktifkan.`);
       }
     }
 
     function openEventSettingsModal() {
       if (userRole !== 'admin') {
-        showAlert("Akses Terbatas", "Mode Anggota hanya dapat memperbarui status barang. Hanya PIC (Admin) yang dapat mengubah nama event.");
+        showAlert("Akses Terbatas", "Hanya PIC (Admin) yang dapat mengubah nama event. Ganti ke mode Admin jika kamu memiliki akses.");
         return;
       }
       document.getElementById('settingEventName').value = eventInfo.name;
@@ -606,10 +1040,9 @@
         .upsert({ id: 'main', name: newName, date: newDate });
 
       if (!error) {
-        eventInfo.name = newName;
-        eventInfo.date = newDate;
+        eventInfo = { name: newName, date: newDate };
         updateEventHeader();
-        addLog(`Mengubah detail event menjadi "<b>${newName}</b>" (${newDate})`);
+        addLogToCloud(`Mengubah detail event menjadi "<b>${newName}</b>" (${newDate})`);
         toggleModal('eventSettingsModal', false);
         renderApp();
       } else {
@@ -617,14 +1050,14 @@
       }
     }
 
-    // MENGIRIM LOG ACTIVITI KE SUPABASE CLOUD
-    async function addLog(actionText) {
-      const formattedText = `<b>${currentUserName}</b>: ${actionText}`;
-      await supabaseClient.from('event_logs').insert([{ text: formattedText }]);
-      fetchLogsFromCloud();
+    async function addLogToCloud(actionText) {
+      const uName = currentUserName || 'Sistem';
+      await supabaseClient.from('event_logs').insert([{
+        user_name: uName,
+        action_text: actionText
+      }]);
     }
 
-    // FITUR RESET DATA & LOG ACTIVITY
     function openResetModal() {
       if (userRole !== 'admin') {
         showAlert("Akses Dibatasi", "Hanya PIC (Admin) yang berhak melakukan reset data event.");
@@ -635,9 +1068,9 @@
 
     async function handleClearLogOnly() {
       await supabaseClient.from('event_logs').delete().neq('id', 0);
-      await addLog(`Riwayat aktivitas dibersihkan oleh <b>${currentUserName}</b>.`);
+      await addLogToCloud(`Riwayat aktivitas dibersihkan oleh <b>${currentUserName}</b>.`);
       toggleModal('resetModal', false);
-      showAlert("Riwayat Dibersihkan", "Riwayat aktivitas tim berhasil dikosongkan secara realtime di seluruh HP.");
+      showAlert("Riwayat Dibersihkan", "Riwayat aktivitas tim di cloud berhasil dikosongkan.");
     }
 
     function triggerFullResetConfirmation() {
@@ -647,20 +1080,22 @@
 
     async function executeFullReset() {
       toggleModal('finalConfirmModal', false);
-      // Hapus seluruh barang & log di Supabase Cloud
-      const errItems = await supabaseClient.from('event_items').delete().neq('id', '0');
-      const errLogs = await supabaseClient.from('event_logs').delete().neq('id', 0);
-      
-      if (!errItems.error) {
+      const { error } = await supabaseClient.from('event_items').delete().neq('id', '0');
+
+      if (!error) {
         items = [];
-        await addLog(`Sistem di-reset total untuk event baru oleh <b>${currentUserName}</b>.`);
+        await supabaseClient.from('event_logs').delete().neq('id', 0);
+        await addLogToCloud(`Sistem di-reset total untuk event baru oleh <b>${currentUserName}</b>.`);
         renderApp();
-        showAlert("Reset Berhasil", "Seluruh data barang & riwayat telah bersih (0). Kamu siap menginput barang untuk event baru!");
+        showAlert("Reset Berhasil", "Seluruh data barang & riwayat telah bersih (0).");
       } else {
-        showAlert("Gagal Reset", "Gagal mereset database cloud: " + errItems.error.message);
+        showAlert("Gagal Reset", "Gagal mereset database cloud: " + error.message);
       }
     }
 
+    // ==========================================
+    // 5. CRUD LOGISTIK BARANG
+    // ==========================================
     async function saveItemToCloud(itemData) {
       const { error } = await supabaseClient.from('event_items').upsert(itemData);
       if (error) {
@@ -668,141 +1103,262 @@
       }
     }
 
-    function setFilter(filter) {
-      currentFilter = filter;
-      ['all', 'belum_diambil', 'belum_dikembalikan', 'selesai'].forEach(f => {
-        const btn = document.getElementById(`tab-${f}`);
-        if(f === filter) {
-          btn.className = "flex-1 px-3 py-1.5 rounded-lg bg-white shadow text-slate-900 font-bold text-center transition";
-        } else {
-          btn.className = "flex-1 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 text-center transition";
-        }
-      });
-      renderItemList();
+    function autoDetectSchoolAsset() {
+      const type = document.getElementById('itemType').value;
+      const name = (document.getElementById('itemName').value || '').toLowerCase();
+      const origin = (document.getElementById('itemOrigin').value || '').toLowerCase();
+      const schoolCheckbox = document.getElementById('itemIsSchoolAsset');
+
+      if (!schoolCheckbox || type !== 'dipinjam') return;
+      const schoolKeywords = ['sekolah', 'kelas', 'tu', 'ipm', 'gudang', 'lab', 'ruang', 'perpustakaan', 'lapangan', 'osis'];
+      schoolCheckbox.checked = schoolKeywords.some(kw => name.includes(kw) || origin.includes(kw));
     }
 
-    function handleSearch(query) {
-      searchQuery = query.toLowerCase().trim();
-      renderItemList();
-    }
+    function handleItemTypeChange(type) {
+      const priceContainer = document.getElementById('priceContainer');
+      const schoolOption = document.getElementById('schoolItemOption');
+      const schoolCheckbox = document.getElementById('itemIsSchoolAsset');
+      const originLabel = document.getElementById('originLabel');
+      const itemOrigin = document.getElementById('itemOrigin');
+      const deadlineLabel = document.getElementById('deadlineLabel');
+      const itemDeadline = document.getElementById('itemDeadline');
+      const contactLabel = document.getElementById('contactLabel');
+      const itemContact = document.getElementById('itemContact');
 
-    function toggleModal(modalId, show) {
-      const modal = document.getElementById(modalId);
-      if (show) {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+      if (type === 'dibeli') {
+        priceContainer.classList.remove('hidden');
+        if (schoolOption) schoolOption.classList.add('hidden');
+        if (schoolCheckbox) schoolCheckbox.checked = false;
+
+        document.getElementById('priceLabel').innerText = "Harga Belanja Total / Satuan (Rp)";
+        document.getElementById('priceSub').innerText = "Catat harga beli barang untuk rekap keuangan.";
+        originLabel.innerText = "Tempat Belanja / Toko *";
+        itemOrigin.placeholder = "misal: Toko Elektronik Jaya / Shopee";
+        deadlineLabel.innerText = "Target Waktu Pembelian";
+        itemDeadline.placeholder = "misal: H-2 Event / Sabtu, 10:00 WIB";
+        contactLabel.innerText = "Kontak Toko / CS (No WA)";
+        itemContact.placeholder = "misal: 081234567890";
+      } else if (type === 'sewa') {
+        priceContainer.classList.remove('hidden');
+        if (schoolOption) schoolOption.classList.add('hidden');
+        if (schoolCheckbox) schoolCheckbox.checked = false;
+
+        document.getElementById('priceLabel').innerText = "Biaya Sewa / Rental (Rp)";
+        document.getElementById('priceSub').innerText = "Biaya sewa barang untuk event.";
+        originLabel.innerText = "Vendor / Tempat Rental Sewa *";
+        itemOrigin.placeholder = "misal: Rental Sound Depok";
+        deadlineLabel.innerText = "Tenggat Pengembalian Sewa *";
+        itemDeadline.placeholder = "misal: Minggu, 22:00 WIB (Selesai Acara)";
+        contactLabel.innerText = "Kontak Vendor Sewa (No WA) *";
+        itemContact.placeholder = "misal: 081234567890";
       } else {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+        priceContainer.classList.add('hidden');
+        if (schoolOption) schoolOption.classList.remove('hidden');
+        autoDetectSchoolAsset();
+
+        originLabel.innerText = "Lokasi Asal / Pemilik Barang *";
+        itemOrigin.placeholder = "misal: Gudang Sekolah / Ruang OSIS";
+        deadlineLabel.innerText = "Target Waktu Pinjam / Deadline";
+        itemDeadline.placeholder = "misal: Sabtu 31 Maret 2026";
+        contactLabel.innerText = "Kontak Pemilik (No WA)";
+        itemContact.placeholder = "misal: 081234567890";
       }
     }
 
     async function handleAddItem(e) {
       e.preventDefault();
+      const submitBtn = document.getElementById('btnSubmitItem');
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Menyimpan...';
+
       const name = document.getElementById('itemName').value;
       const type = document.getElementById('itemType').value;
       const qty = parseInt(document.getElementById('itemQty').value) || 1;
+      const price = parseFloat(document.getElementById('itemPrice').value) || 0;
       const origin = document.getElementById('itemOrigin').value;
       const deadline = document.getElementById('itemDeadline').value;
       const contact = document.getElementById('itemContact').value;
+      const isSchool = (type === 'dipinjam') ? document.getElementById('itemIsSchoolAsset').checked : false;
 
       const newItem = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
         name,
         type,
         qty,
+        qty_taken: 0,
+        price,
         origin,
         contact,
         deadline: deadline || '-',
         status: 'belum_diambil',
-        return_location: type === 'dipinjam' ? origin : 'Kotak Logistik Event',
-        note: '',
+        return_location: type === 'dibeli' ? 'Kotak Logistik Event' : origin,
+        condition: 'Baik',
+        note: isSchool ? '[Aset Sekolah]' : '',
         photo: null,
-        updated_by: currentUserName,
-        assigned_to: '-'
+        updated_by: currentUserName || 'Petugas',
+        assigned_to: '-',
+        takers_history: []
       };
 
       await saveItemToCloud(newItem);
-      await addLog(`Menambahkan barang "<b>${name}</b>" (${qty} unit)`);
-      
+      await addLogToCloud(`Menambahkan barang "<b>${name}</b>" (${qty} unit) [Tipe: ${type.toUpperCase()}${isSchool ? ' - Aset Sekolah' : ''}]`);
+
       document.getElementById('addItemForm').reset();
+      handleItemTypeChange('dipinjam');
+      submitBtn.disabled = false;
+      submitBtn.innerText = 'Simpan Barang';
       toggleModal('addItemModal', false);
     }
 
-    async function markAsTaken(id) {
+    function openTakeItemModal(id) {
+      if (!currentUserName) {
+        openUserModal(true);
+        return;
+      }
       const item = items.find(i => i.id === id);
-      if (item) {
+      if (!item) return;
+
+      document.getElementById('takeItemId').value = item.id;
+      document.getElementById('takeItemName').innerText = item.name;
+
+      const currentTaken = item.qty_taken || 0;
+      const remaining = item.qty - currentTaken;
+      document.getElementById('takeItemStatusInfo').innerText = `Terambil: ${currentTaken} dari ${item.qty} unit (Sisa: ${remaining} unit)`;
+
+      const countInput = document.getElementById('takeItemCount');
+      countInput.max = remaining;
+      countInput.value = remaining;
+
+      document.getElementById('takeItemReceiver').value = currentUserName;
+      document.getElementById('takeItemGiver').value = '';
+
+      const priceBox = document.getElementById('takeItemPriceContainer');
+      const priceInput = document.getElementById('takeItemPrice');
+      if (item.type === 'dibeli' || item.type === 'sewa') {
+        priceBox.classList.remove('hidden');
+        priceInput.value = item.price || '';
+      } else {
+        priceBox.classList.add('hidden');
+        priceInput.value = '';
+      }
+
+      toggleModal('takeItemModal', true);
+    }
+
+    async function handleTakeItemSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('takeItemId').value;
+      const count = parseInt(document.getElementById('takeItemCount').value) || 0;
+      const receiver = document.getElementById('takeItemReceiver').value.trim();
+      const giver = document.getElementById('takeItemGiver').value.trim() || 'Pemilik/Vendor';
+      const updatedPriceVal = document.getElementById('takeItemPrice').value;
+
+      const item = items.find(i => i.id === id);
+      if (item && count > 0) {
+        const currentTaken = item.qty_taken || 0;
+        const newTotalTaken = currentTaken + count;
+
+        item.qty_taken = newTotalTaken;
         item.status = 'diambil';
         item.updated_by = currentUserName;
-        item.assigned_to = currentUserName;
-        
-        await saveItemToCloud(item);
-        if (item.type === 'dibeli') {
-          await addLog(`Membeli/Mengambil "<b>${item.name}</b>" oleh <b>${currentUserName}</b>`);
-        } else {
-          await addLog(`Mengambil "<b>${item.name}</b>" oleh <b>${currentUserName}</b>`);
+        item.assigned_to = receiver;
+
+        let priceChangeLog = '';
+        if ((item.type === 'dibeli' || item.type === 'sewa') && updatedPriceVal !== '') {
+          const newPrice = parseFloat(updatedPriceVal) || 0;
+          if (newPrice !== item.price) {
+            priceChangeLog = ` (Harga di-update dari ${formatRupiah(item.price)} ➔ ${formatRupiah(newPrice)})`;
+            item.price = newPrice;
+          }
         }
+
+        if (!Array.isArray(item.takers_history)) item.takers_history = [];
+        const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        item.takers_history.push({ count, receiver, giver, time: nowStr });
+
+        await saveItemToCloud(item);
+
+        const statusKet = newTotalTaken >= item.qty ? 'TUNTAS' : `SEBAGIAN (${newTotalTaken}/${item.qty} unit)`;
+        await addLogToCloud(`Mengambil ${count} unit "<b>${item.name}</b>" [Status: ${statusKet}] — Penerima: <b>${receiver}</b> (Dari: ${giver})${priceChangeLog}`);
+        toggleModal('takeItemModal', false);
       }
     }
 
     function openReturnModal(id) {
-      const item = items.find(i => i.id === id);
-      if (item) {
-        document.getElementById('returnItemId').value = item.id;
-        document.getElementById('returnLocation').value = item.return_location || item.origin;
-        document.getElementById('returnNote').value = item.note || '';
-
-        const modalTitle = document.getElementById('returnModalTitle');
-        const modalLocationLabel = document.getElementById('returnLocationLabel');
-        const modalLocationSub = document.getElementById('returnLocationSub');
-        const submitBtn = document.getElementById('returnSubmitBtn');
-
-        if (item.type === 'dibeli') {
-          modalTitle.innerHTML = `<i data-lucide="package-check" class="w-5 h-5 text-emerald-600"></i> Penyimpanan Barang Dibeli`;
-          modalLocationLabel.innerText = "Lokasi Penyimpanan / Penaruhan *";
-          modalLocationSub.innerText = "Tuliskan di mana barang hasil belanja ini ditaruh.";
-          submitBtn.innerText = "Tandai Selesai / Disimpan";
-        } else {
-          modalTitle.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i> Pengembalian Barang Pinjaman`;
-          modalLocationLabel.innerText = "Lokasi Akhir Pengembalian *";
-          modalLocationSub.innerText = "Ubah jika dikembalikan ke tempat berbeda dari asal.";
-          submitBtn.innerText = "Tandai Selesai";
-        }
-
-        toggleModal('returnModal', true);
-        lucide.createIcons();
+      if (!currentUserName) {
+        openUserModal(true);
+        return;
       }
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+
+      document.getElementById('returnItemId').value = item.id;
+      document.getElementById('returnLocation').value = item.return_location || item.origin;
+      document.getElementById('returnNote').value = item.note || '';
+      document.getElementById('returnCondition').value = item.condition || 'Baik';
+
+      selectedImageDataUrl = null;
+      stopLiveCamera();
+      document.getElementById('photoPreviewContainer').classList.add('hidden');
+      document.getElementById('returnPhoto').value = '';
+
+      const modalTitle = document.getElementById('returnModalTitle');
+      const modalLocationLabel = document.getElementById('returnLocationLabel');
+      const submitBtn = document.getElementById('returnSubmitBtn');
+
+      if (item.type === 'dibeli') {
+        modalTitle.innerHTML = `<i data-lucide="package-check" class="w-5 h-5 text-emerald-600"></i> Penyimpanan Barang Dibeli`;
+        modalLocationLabel.innerText = "Lokasi Penaruhan *";
+        submitBtn.innerText = "Tandai Selesai / Disimpan";
+      } else if (item.type === 'sewa') {
+        modalTitle.innerHTML = `<i data-lucide="rotate-ccw" class="w-5 h-5 text-purple-600"></i> Pengembalian Barang Sewa`;
+        modalLocationLabel.innerText = "Lokasi Vendor Sewa *";
+        submitBtn.innerText = "Tandai Selesai Dikembalikan";
+      } else {
+        modalTitle.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i> Pengembalian Barang Pinjaman`;
+        modalLocationLabel.innerText = "Lokasi Pengembalian *";
+        submitBtn.innerText = "Tandai Selesai";
+      }
+
+      toggleModal('returnModal', true);
+      fetchLiveLocation();
+      lucide.createIcons();
+    }
+
+    function closeReturnModal() {
+      stopLiveCamera();
+      toggleModal('returnModal', false);
     }
 
     async function handleReturnSubmit(e) {
       e.preventDefault();
+      stopLiveCamera();
+
       const id = document.getElementById('returnItemId').value;
       const location = document.getElementById('returnLocation').value;
+      const condition = document.getElementById('returnCondition').value;
       const note = document.getElementById('returnNote').value;
-      const photoInput = document.getElementById('returnPhoto');
 
       const item = items.find(i => i.id === id);
       if (item) {
         item.status = 'selesai';
         item.return_location = location;
+        item.condition = condition;
         item.note = note;
-        item.updated_by = currentUserName;
+        item.updated_by = currentUserName || 'Petugas';
 
-        const actionWord = item.type === 'dibeli' ? 'Menyimpan' : 'Mengembalikan';
-
-        if (photoInput.files && photoInput.files[0]) {
-          const reader = new FileReader();
-          reader.onload = async function(evt) {
-            item.photo = evt.target.result;
-            await saveItemToCloud(item);
-            await addLog(`${actionWord} "<b>${item.name}</b>" di [${location}] oleh ${currentUserName} + Foto`);
-          };
-          reader.readAsDataURL(photoInput.files[0]);
-        } else {
-          await saveItemToCloud(item);
-          await addLog(`${actionWord} "<b>${item.name}</b>" di [${location}] oleh ${currentUserName}`);
+        if (selectedImageDataUrl) {
+          item.photo = selectedImageDataUrl;
         }
 
+        let actionWord = 'Mengembalikan';
+        if (item.type === 'dibeli') actionWord = 'Menyimpan';
+        if (item.type === 'sewa') actionWord = 'Mengembalikan Sewa';
+
+        await saveItemToCloud(item);
+
+        const fotoTag = item.photo ? ' + Foto Bukti Timestamp' : '';
+        await addLogToCloud(`${actionWord} "<b>${item.name}</b>" di [${location}] oleh <b>${currentUserName}</b> (Kondisi: ${condition})${fotoTag}`);
         toggleModal('returnModal', false);
       }
     }
@@ -815,79 +1371,471 @@
       const item = items.find(i => i.id === id);
       const { error } = await supabaseClient.from('event_items').delete().eq('id', id);
       if (!error) {
-        await addLog(`Menghapus "<b>${item ? item.name : 'Barang'}</b>"`);
+        await addLogToCloud(`Menghapus "<b>${item ? item.name : 'Barang'}</b>"`);
       }
     }
 
-    // FITUR EXPORT LAPORAN KOMPATIBEL UNTUK SEMUA HP
-    function exportAdminReport() {
-      if (items.length === 0 && logs.length === 0) {
-        showAlert("Laporan Kosong", "Belum ada data barang atau riwayat aktivitas untuk diunduh.");
+    // ==========================================
+    // 6. GENERATOR PDF & WHATSAPP SHARE
+    // ==========================================
+    async function generateSchoolPeminjamanPDF() {
+      const schoolItems = items.filter(isItemSchoolAsset);
+
+      if (schoolItems.length === 0) {
+        showAlert("Tidak Ada Data", "Tidak ditemukan barang pinjaman aset sekolah dalam daftar. Pastikan opsi 'Aset / Fasilitas Sekolah' aktif pada barang pinjaman.");
         return;
       }
 
-      let reportText = `=========================================\n`;
-      reportText += `LAPORAN RESMI IPM - SMA MUHAMMADIYAH 2 DEPOK\n`;
-      reportText += `Event: ${eventInfo.name} (${eventInfo.date})\n`;
-      reportText += `Diexport oleh Admin: ${currentUserName} pada ${new Date().toLocaleString()}\n`;
-      reportText += `=========================================\n\n`;
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
 
-      reportText += `--- RINGKASAN DATA BARANG (${items.length} Item Total) ---\n`;
-      items.forEach((i, idx) => {
-        reportText += `${idx + 1}. [${i.status.toUpperCase()}] ${i.name} (Qty: ${i.qty}) - Tipe: ${i.type}\n`;
-        reportText += `   Asal/Beli: ${i.origin} | Tujuan/Simpan: ${i.return_location}\n`;
-        reportText += `   PIC Terakhir: ${i.assigned_to || '-'} | Update Terakhir: ${i.updated_by || '-'}\n`;
-        if(i.deadline && i.deadline !== '-') reportText += `   Deadline: ${i.deadline}\n`;
-        if(i.note) reportText += `   Catatan: ${i.note}\n`;
-        reportText += `-----------------------------------------\n`;
+      const peminjamLabel = currentUserName
+        ? `PR IPM ${SARPRAS_OFFICIALS.schoolName} (${currentUserName})`
+        : `PR IPM ${SARPRAS_OFFICIALS.schoolName}`;
+      const tujuanLabel = eventInfo.name !== 'Isi Nama Event' ? eventInfo.name : '-';
+      const tanggalEvent = eventInfo.date !== 'Tanggal Event' ? eventInfo.date : '';
+
+      // HALAMAN 1: DEPAN (KARTU PEMINJAMAN)
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.text('KARTU PEMINJAMAN ALAT / BARANG INVENTARIS', 105, 16, { align: 'center' });
+      doc.text(SARPRAS_OFFICIALS.schoolName, 105, 21.5, { align: 'center' });
+      doc.text(SARPRAS_OFFICIALS.academicYear, 105, 27, { align: 'center' });
+
+      doc.setLineWidth(0.6);
+      doc.line(14, 30, 196, 30);
+      doc.setLineWidth(0.2);
+      doc.line(14, 31.2, 196, 31.2);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9.5);
+      doc.text('NAMA PENGGUNA / PEMINJAM', 14, 39);
+      doc.text(`:  ${peminjamLabel}`, 76, 39);
+      doc.line(78, 40.2, 196, 40.2);
+
+      doc.text('TUJUAN PENGGUNAAN / PEMINJAMAN', 14, 46);
+      doc.text(`:  ${tujuanLabel}`, 76, 46);
+      doc.line(78, 47.2, 196, 47.2);
+
+      const minFrontRows = Math.max(13, schoolItems.length);
+      const frontBody = [];
+
+      for (let i = 0; i < minFrontRows; i++) {
+        const item = schoolItems[i];
+        const row = [
+          item ? i + 1 : '',
+          item ? item.name : '',
+          item ? `${item.qty} Unit` : ''
+        ];
+
+        if (i === 0) {
+          row.push({
+            content: tanggalEvent || '-',
+            rowSpan: 3,
+            styles: { halign: 'center', valign: 'middle', fontSize: 8.5 }
+          });
+          row.push({
+            content: (item && item.deadline && item.deadline !== '-') ? item.deadline : (tanggalEvent || '-'),
+            rowSpan: 3,
+            styles: { halign: 'center', valign: 'middle', fontSize: 8.5 }
+          });
+        } else if (i === 3) {
+          const remainingSpan = minFrontRows - 3;
+          const pjDisplay = currentUserName ? `( ${currentUserName} )` : '( ........................................ )';
+          row.push({
+            content: `PJ. PELAKSANA ACARA\n\n\n\n\n${pjDisplay}`,
+            rowSpan: remainingSpan,
+            styles: { halign: 'center', valign: 'middle', fontSize: 8, fontStyle: 'bold' }
+          });
+          row.push({
+            content: `PEMBINA ORTOM\n\n\n\n\n( ........................................ )`,
+            rowSpan: remainingSpan,
+            styles: { halign: 'center', valign: 'middle', fontSize: 8, fontStyle: 'bold' }
+          });
+        }
+
+        frontBody.push(row);
+      }
+
+      frontBody.push([
+        {
+          content: 'Catatan: Jika terjadi Kerusakan atau Kehilangan, Peminjam/Pengguna Bertanggung jawab penuh untuk menggantikan barang tersebut.',
+          colSpan: 5,
+          styles: { fontStyle: 'italic', fontSize: 8, halign: 'left', fillColor: [248, 250, 252] }
+        }
+      ]);
+
+      doc.autoTable({
+        startY: 52,
+        theme: 'grid',
+        head: [['NO.', 'NAMA BARANG', 'JUMLAH', 'TANGGAL\nPEMINJAMAN', 'TANGGAL\nPENGEMBALIAN']],
+        body: frontBody,
+        headStyles: {
+          fillColor: [241, 245, 249],
+          textColor: [0, 0, 0],
+          fontStyle: 'bold',
+          fontSize: 8,
+          halign: 'center',
+          valign: 'middle',
+          lineColor: [0, 0, 0],
+          lineWidth: 0.25
+        },
+        styles: {
+          fontSize: 8.5,
+          textColor: [0, 0, 0],
+          lineColor: [0, 0, 0],
+          lineWidth: 0.25,
+          cellPadding: 2,
+          minCellHeight: 7.5
+        },
+        columnStyles: {
+          0: { cellWidth: 11, halign: 'center' },
+          1: { cellWidth: 63 },
+          2: { cellWidth: 20, halign: 'center' },
+          3: { cellWidth: 44, halign: 'center' },
+          4: { cellWidth: 44, halign: 'center' }
+        }
       });
 
-      reportText += `\n--- RIWAYAT AKTIVITAS TIM ---\n`;
-      logs.forEach(l => {
-        const cleanText = l.text.replace(/<\/?[^>]+(>|$)/g, "");
-        reportText += `[${l.time}] ${cleanText}\n`;
+      let signY1 = doc.lastAutoTable.finalY + 9;
+      if (signY1 > 245) {
+        doc.addPage();
+        signY1 = 25;
+      }
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text('Mengetahui,', 48, signY1, { align: 'center' });
+      doc.text('Kepala Sekolah', 48, signY1 + 4.5, { align: 'center' });
+
+      doc.text('Disetujui Oleh,', 152, signY1, { align: 'center' });
+      doc.text('Wakil. Sarana dan Prasarana', 152, signY1 + 4.5, { align: 'center' });
+
+      doc.setFont('helvetica', 'bold');
+      doc.text(SARPRAS_OFFICIALS.principalName, 48, signY1 + 24, { align: 'center' });
+      doc.text(SARPRAS_OFFICIALS.sarprasName, 152, signY1 + 24, { align: 'center' });
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.text(SARPRAS_OFFICIALS.principalNbm, 48, signY1 + 28.5, { align: 'center' });
+      doc.text(SARPRAS_OFFICIALS.sarprasNbm, 152, signY1 + 28.5, { align: 'center' });
+
+      // HALAMAN 2: BELAKANG (VERIFIKASI PENGECEKAN)
+      doc.addPage();
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text('VERIFIKASI PENGECEKAN BARANG PEMINJAMAN', 105, 16, { align: 'center' });
+
+      const minBackRows = Math.max(20, schoolItems.length);
+      const backBody = [];
+
+      for (let i = 0; i < minBackRows; i++) {
+        const item = schoolItems[i];
+        let baikMark = '';
+        let ringanMark = '';
+        let beratMark = '';
+        let ketText = '';
+
+        if (item) {
+          const cleanNote = (item.note || '').replace(/\[Aset Sekolah\]/gi, '').trim();
+
+          if (item.status === 'selesai') {
+            if (item.condition === 'Baik') baikMark = 'V';
+            else if (item.condition === 'Rusak Ringan') ringanMark = 'V';
+            else if (item.condition === 'Rusak Berat') beratMark = 'V';
+            else if (item.condition === 'Hilang') ketText = 'HILANG';
+          }
+
+          if (cleanNote) {
+            ketText = ketText ? `${ketText} - ${cleanNote}` : cleanNote;
+          }
+        }
+
+        backBody.push([
+          item ? i + 1 : '',
+          item ? item.name : '',
+          item ? `${item.qty} Unit` : '',
+          baikMark,
+          ringanMark,
+          beratMark,
+          ketText
+        ]);
+      }
+
+      doc.autoTable({
+        startY: 22,
+        theme: 'grid',
+        head: [
+          [
+            { content: 'NO.', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+            { content: 'NAMA BARANG', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+            { content: 'JUMLAH', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+            { content: 'KONDISI BARANG', colSpan: 3, styles: { halign: 'center', valign: 'middle' } },
+            { content: 'KETERANGAN', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }
+          ],
+          [
+            { content: 'BAIK', styles: { halign: 'center', valign: 'middle', fontSize: 7.5 } },
+            { content: 'RUSAK\nRINGAN', styles: { halign: 'center', valign: 'middle', fontSize: 7.5 } },
+            { content: 'RUSAK\nBERAT', styles: { halign: 'center', valign: 'middle', fontSize: 7.5 } }
+          ]
+        ],
+        body: backBody,
+        headStyles: {
+          fillColor: [241, 245, 249],
+          textColor: [0, 0, 0],
+          fontStyle: 'bold',
+          fontSize: 8,
+          lineColor: [0, 0, 0],
+          lineWidth: 0.25
+        },
+        styles: {
+          fontSize: 8.5,
+          textColor: [0, 0, 0],
+          lineColor: [0, 0, 0],
+          lineWidth: 0.25,
+          cellPadding: 1.8,
+          minCellHeight: 7.5
+        },
+        columnStyles: {
+          0: { cellWidth: 11, halign: 'center' },
+          1: { cellWidth: 58 },
+          2: { cellWidth: 20, halign: 'center' },
+          3: { cellWidth: 16, halign: 'center', fontStyle: 'bold' },
+          4: { cellWidth: 18, halign: 'center', fontStyle: 'bold' },
+          5: { cellWidth: 18, halign: 'center', fontStyle: 'bold' },
+          6: { cellWidth: 41 }
+        }
       });
 
-      reportText += `\nPowered By Razuhfgkruay\n`;
+      let signY2 = doc.lastAutoTable.finalY + 10;
+      if (signY2 > 250) {
+        doc.addPage();
+        signY2 = 25;
+      }
 
-      const fileName = `Laporan_IPM_${eventInfo.name.replace(/\s+/g, '_')}.txt`;
-      const encodedUri = "data:text/plain;charset=utf-8," + encodeURIComponent(reportText);
-      
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", fileName);
-      document.body.appendChild(link);
-      
-      link.click();
-      document.body.removeChild(link);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text('Wakil. Sarana dan Prasarana', 48, signY2, { align: 'center' });
+      doc.text('Penanggung Jawab Peminjaman', 152, signY2, { align: 'center' });
+
+      doc.setFont('helvetica', 'bold');
+      doc.text(SARPRAS_OFFICIALS.sarprasName, 48, signY2 + 21, { align: 'center' });
+      doc.text(currentUserName ? `( ${currentUserName} )` : '................................................', 152, signY2 + 21, { align: 'center' });
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.text(SARPRAS_OFFICIALS.sarprasNbm, 48, signY2 + 25.5, { align: 'center' });
+
+      const safeFileName = eventInfo.name.replace(/[^a-zA-Z0-9]/g, '_');
+      doc.save(`Kartu_Peminjaman_Sarpras_${safeFileName}.pdf`);
+    }
+
+    async function generatePDFReport() {
+      if (!items || items.length === 0) {
+        showAlert("Data Kosong", "Tidak ada data barang yang bisa dicetak ke PDF.");
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+      const textDark = [30, 41, 59];
+
+      doc.setFillColor(255, 203, 5);
+      doc.rect(0, 0, 210, 28, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text('LAPORAN PEMINJAMAN DAN PENGEMBALIAN BARANG', 14, 11);
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('IPM SMA Muhammadiyah 2 Depok', 14, 16);
+      doc.text(`Event: ${eventInfo.name} | Tanggal: ${eventInfo.date}`, 14, 21);
+      doc.text(`Cetak Laporan: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, 14, 25);
+
+      const totalQty = items.reduce((s, i) => s + (parseInt(i.qty) || 1), 0);
+      const totalTaken = items.reduce((s, i) => s + (parseInt(i.qty_taken) || 0), 0);
+      const belumQty = items.filter(i => i.status === 'belum_diambil').reduce((s, i) => s + (parseInt(i.qty) || 1), 0);
+      const totalBiaya = items.reduce((s, i) => s + (parseFloat(i.price) || 0), 0);
+
+      doc.setTextColor(...textDark);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Daftar Barang Terlapor:', 14, 35);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.text(`• Total Target Barang : ${items.length} Jenis (${totalQty} Unit)`, 14, 41);
+      doc.text(`• Sudah Terambil      : ${totalTaken} dari ${totalQty} Unit`, 14, 46);
+      doc.text(`• Belum Diambil/Beli  : ${belumQty} Unit`, 110, 41);
+      doc.text(`• Total Biaya Keluar  : ${formatRupiah(totalBiaya)}`, 110, 46);
+
+      const tableData = items.map((item, index) => {
+        let takersStr = '-';
+        if (Array.isArray(item.takers_history) && item.takers_history.length > 0) {
+          takersStr = item.takers_history.map(t => `${t.receiver} (${t.count} unit dari ${t.giver})`).join(', ');
+        } else if (item.assigned_to && item.assigned_to !== '-') {
+          takersStr = item.assigned_to;
+        }
+
+        const takenStatus = (item.qty_taken || 0) < item.qty
+          ? `${item.qty_taken || 0}/${item.qty} Unit`
+          : `${item.qty} Unit (Tuntas)`;
+
+        let typeLabel = 'Pinjam';
+        if (item.type === 'dibeli') typeLabel = 'Beli';
+        if (item.type === 'sewa') typeLabel = 'Sewa';
+
+        const priceStr = item.price ? formatRupiah(item.price) : '-';
+
+        return [
+          index + 1,
+          item.name,
+          takenStatus,
+          typeLabel,
+          priceStr,
+          item.status === 'belum_diambil' ? 'Belum' : (item.status === 'diambil' ? 'Proses' : 'Selesai'),
+          item.condition || 'Baik',
+          item.origin || '-',
+          takersStr
+        ];
+      });
+
+      doc.autoTable({
+        startY: 51,
+        head: [['No', 'Nama Barang', 'Qty Terambil', 'Tipe', 'Biaya', 'Status', 'Kondisi', 'Asal / Vendor', 'Daftar Penerima & Pemberi']],
+        body: tableData,
+        headStyles: {
+          fillStyle: 'F',
+          fillColor: [255, 203, 5],
+          textColor: [0, 0, 0],
+          fontStyle: 'bold',
+          halign: 'center'
+        },
+        styles: {
+          fontSize: 7.5,
+          cellPadding: 2,
+          overflow: 'linebreak'
+        },
+        columnStyles: {
+          0: { cellWidth: 8, halign: 'center' },
+          1: { cellWidth: 28 },
+          2: { cellWidth: 18, halign: 'center' },
+          3: { cellWidth: 15, halign: 'center' },
+          4: { cellWidth: 22, halign: 'right' },
+          5: { cellWidth: 14, halign: 'center' },
+          6: { cellWidth: 14, halign: 'center' },
+          7: { cellWidth: 26 },
+          8: { cellWidth: 'auto' }
+        }
+      });
+
+      const itemsWithPhoto = items.filter(i => i.photo);
+      if (itemsWithPhoto.length > 0) {
+        doc.addPage();
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text('LAMPIRAN FOTO BUKTI PENGEMBALIAN & PENYIMPANAN BARANG', 14, 15);
+        doc.setLineWidth(0.4);
+        doc.line(14, 17, 196, 17);
+
+        let x = 14;
+        let y = 22;
+        const imgWidth = 55;
+        const imgHeight = 45;
+
+        itemsWithPhoto.forEach((item, idx) => {
+          try {
+            doc.addImage(item.photo, 'JPEG', x, y, imgWidth, imgHeight);
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${idx + 1}. ${item.name} (${item.qty} Unit)`, x, y + imgHeight + 4);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Lokasi: ${item.return_location || item.origin}`, x, y + imgHeight + 8);
+
+            x += 62;
+            if ((idx + 1) % 3 === 0) {
+              x = 14;
+              y += imgHeight + 16;
+            }
+
+            if (y + imgHeight > 270) {
+              doc.addPage();
+              y = 20;
+              x = 14;
+            }
+          } catch (e) {
+            console.error('Gagal memuat gambar ke PDF:', e);
+          }
+        });
+      }
+
+      let finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 200;
+      if (finalY > 230) {
+        doc.addPage();
+        finalY = 30;
+      }
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Depok, ' + new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }), 135, finalY);
+      doc.text('Penanggung Jawab,', 135, finalY + 5);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`( ${currentUserName || '........................'} )`, 135, finalY + 25);
+
+      const safeFileName = eventInfo.name.replace(/[^a-zA-Z0-9]/g, '_');
+      doc.save(`Laporan_Peminjaman_Pengembalian_${safeFileName}.pdf`);
     }
 
     function shareToWhatsApp() {
       let text = `📋 *LAPORAN LOGISTIK IPM* \n🏫 *SMA Muhammadiyah 2 Depok*\n📌 Event: ${eventInfo.name} (${eventInfo.date})\n\n`;
-      
-      let belumDiambil = items.filter(i => i.status === 'belum_diambil');
-      let dipinjam = items.filter(i => i.status === 'diambil');
-      let selesai = items.filter(i => i.status === 'selesai');
 
-      text += `🔴 *Belum Diambil / Dibeli (${belumDiambil.reduce((s,i)=>s+i.qty,0)} unit):*\n`;
-      if(belumDiambil.length === 0) text += `- (Nihil)\n`;
+      const belumDiambil = items.filter(i => (i.qty_taken || 0) < i.qty);
+      const dipinjam = items.filter(i => i.status === 'diambil');
+      const selesai = items.filter(i => i.status === 'selesai');
+
+      text += `🔴 *Belum Tuntas Diambil (${belumDiambil.length} jenis item):*\n`;
+      if (belumDiambil.length === 0) text += `- (Nihil / Semua Terambil)\n`;
       belumDiambil.forEach(i => {
-        text += `• ${i.name} (${i.qty} unit) - Asal: ${i.origin} ${i.deadline !== '-' ? '⏱ ' + i.deadline : ''}\n`;
+        text += `• ${i.name} (Terambil ${i.qty_taken || 0}/${i.qty} unit) - Asal: ${i.origin}\n`;
       });
 
-      text += `\n🟡 *Proses / Sedang Dipegang (${dipinjam.reduce((s,i)=>s+i.qty,0)} unit):*\n`;
-      if(dipinjam.length === 0) text += `- (Nihil)\n`;
+      text += `\n🟡 *Sedang Dipakai (${dipinjam.length} jenis item):*\n`;
+      if (dipinjam.length === 0) text += `- (Nihil)\n`;
       dipinjam.forEach(i => {
         text += `• ${i.name} (${i.qty} unit) - PIC: *${i.assigned_to}*\n`;
       });
 
-      text += `\n🟢 *Selesai / Aman (${selesai.reduce((s,i)=>s+i.qty,0)} unit):*\n`;
+      text += `\n🟢 *Selesai / Aman (${selesai.length} jenis item):*\n`;
       text += `${selesai.length} jenis item sudah beres.\n\n`;
       text += `_Diperbarui via IPM Event Logistic_\n`;
       text += `_Powered By Razuhfgkruay_`;
 
       const encoded = encodeURIComponent(text);
       window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
+    }
+
+    // ==========================================
+    // 7. FILTER, SEARCH & RENDER UI
+    // ==========================================
+    function setFilter(filter) {
+      currentFilter = filter;
+      ['all', 'belum_diambil', 'belum_dikembalikan', 'selesai', 'sekolah'].forEach(f => {
+        const btn = document.getElementById(`tab-${f}`);
+        if (!btn) return;
+        btn.className = f === filter
+          ? "flex-1 px-2.5 py-1.5 rounded-lg bg-white shadow text-slate-900 font-bold text-center transition shrink-0"
+          : "flex-1 px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 text-center transition shrink-0";
+      });
+      renderItemList();
+    }
+
+    function handleSearch(query) {
+      searchQuery = query.toLowerCase().trim();
+      renderItemList();
     }
 
     function renderApp() {
@@ -899,14 +1847,16 @@
 
     function renderStats() {
       const totalQty = items.reduce((sum, item) => sum + (parseInt(item.qty) || 1), 0);
-      const belumDiambilQty = items.filter(i => i.status === 'belum_diambil').reduce((sum, item) => sum + (parseInt(item.qty) || 1), 0);
+      const totalTaken = items.reduce((sum, item) => sum + (parseInt(item.qty_taken) || 0), 0);
       const belumKembaliQty = items.filter(i => i.status === 'diambil').reduce((sum, item) => sum + (parseInt(item.qty) || 1), 0);
       const selesaiQty = items.filter(i => i.status === 'selesai').reduce((sum, item) => sum + (parseInt(item.qty) || 1), 0);
+      const totalCost = items.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
 
       document.getElementById('statTotal').innerText = totalQty;
-      document.getElementById('statBelumDiambil').innerText = belumDiambilQty;
+      document.getElementById('statBelumDiambil').innerText = `${totalTaken}/${totalQty}`;
       document.getElementById('statBelumKembali').innerText = belumKembaliQty;
       document.getElementById('statSelesai').innerText = selesaiQty;
+      document.getElementById('statTotalCost').innerText = formatRupiah(totalCost);
     }
 
     function renderItemList() {
@@ -915,9 +1865,10 @@
 
       let filtered = items;
 
-      if (currentFilter === 'belum_diambil') filtered = filtered.filter(i => i.status === 'belum_diambil');
+      if (currentFilter === 'belum_diambil') filtered = filtered.filter(i => (i.qty_taken || 0) < i.qty && i.status !== 'selesai');
       if (currentFilter === 'belum_dikembalikan') filtered = filtered.filter(i => i.status === 'diambil');
       if (currentFilter === 'selesai') filtered = filtered.filter(i => i.status === 'selesai');
+      if (currentFilter === 'sekolah') filtered = filtered.filter(isItemSchoolAsset);
 
       if (searchQuery !== '') {
         filtered = filtered.filter(i => {
@@ -939,70 +1890,191 @@
         return;
       }
 
+      const waSvgIcon = `<svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>`;
+
       filtered.forEach(item => {
         let statusBadge = '';
         let actionButtons = '';
+        const qtyTaken = item.qty_taken || 0;
 
-        if (item.status === 'belum_diambil') {
-          statusBadge = `<span class="bg-amber-100 text-amber-800 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> ${item.type === 'dipinjam' ? 'Belum Diambil' : 'Belum Dibeli'}</span>`;
+        if (item.status === 'selesai') {
+          const condColor = item.condition === 'Rusak Berat' || item.condition === 'Hilang'
+            ? 'bg-rose-100 text-rose-800'
+            : (item.condition === 'Rusak Ringan' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800');
+          statusBadge = `<span class="${condColor} text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3 h-3"></i> Selesai (${item.condition || 'Baik'})</span>`;
+        } else if (qtyTaken === 0) {
+          statusBadge = `<span class="bg-amber-100 text-amber-800 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> Belum Diambil</span>`;
           actionButtons = `
-            <button onclick="markAsTaken('${item.id}')" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition">
-              <i data-lucide="check" class="w-3.5 h-3.5"></i> ${item.type === 'dipinjam' ? 'Ambil Barang' : 'Tandai Sudah Dibeli'}
+            <button onclick="openTakeItemModal('${item.id}')" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition">
+              <i data-lucide="package-check" class="w-3.5 h-3.5"></i> Ambil Barang
             </button>
           `;
-        } else if (item.status === 'diambil') {
-          statusBadge = `<span class="bg-blue-100 text-blue-800 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1"><i data-lucide="arrow-right-left" class="w-3 h-3"></i> ${item.type === 'dipinjam' ? 'Sedang Dipakai' : 'Sudah Dibeli'}</span>`;
+        } else if (qtyTaken < item.qty) {
+          statusBadge = `<span class="bg-orange-100 text-orange-800 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1"><i data-lucide="pie-chart" class="w-3 h-3"></i> Sebagian (${qtyTaken}/${item.qty})</span>`;
+          actionButtons = `
+            <button onclick="openTakeItemModal('${item.id}')" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition">
+              <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Ambil Lanjutan (${item.qty - qtyTaken})
+            </button>
+            <button onclick="openReturnModal('${item.id}')" class="w-full sm:w-auto bg-ipm hover:bg-ipm-dark text-slate-900 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition">
+              <i data-lucide="corner-down-left" class="w-3.5 h-3.5"></i> Kembalikan
+            </button>
+          `;
+        } else {
+          statusBadge = `<span class="bg-blue-100 text-blue-800 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1"><i data-lucide="arrow-right-left" class="w-3 h-3"></i> Tuntas (${qtyTaken}/${item.qty})</span>`;
           actionButtons = `
             <button onclick="openReturnModal('${item.id}')" class="w-full sm:w-auto bg-ipm hover:bg-ipm-dark text-slate-900 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition">
-              <i data-lucide="corner-down-left" class="w-3.5 h-3.5"></i> ${item.type === 'dipinjam' ? 'Kembalikan' : 'Simpan Barang'}
+              <i data-lucide="corner-down-left" class="w-3.5 h-3.5"></i> Kembalikan
             </button>
           `;
-        } else if (item.status === 'selesai') {
-          statusBadge = `<span class="bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3 h-3"></i> Selesai</span>`;
         }
 
-        const typeBadge = item.type === 'dipinjam' 
-          ? `<span class="border border-amber-300 bg-amber-50 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded">Pinjam</span>`
-          : `<span class="border border-orange-300 bg-orange-50 text-orange-900 text-[10px] font-bold px-2 py-0.5 rounded">Beli</span>`;
+        let takersListHtml = '';
+        if (Array.isArray(item.takers_history) && item.takers_history.length > 0) {
+          takersListHtml = `
+            <div class="mt-2 pt-2 border-t border-slate-200/60 text-[11px] text-slate-600 space-y-1 col-span-1 sm:col-span-2">
+              <span class="font-bold text-slate-700 block mb-0.5">Riwayat Petugas Penerima/Pemberi:</span>
+              ${item.takers_history.map(t => `
+                <div class="flex items-center justify-between bg-white px-2 py-1 rounded border border-slate-100 text-[10.5px]">
+                  <span><b>${t.receiver}</b> (Ambil ${t.count} unit dari ${t.giver})</span>
+                  <span class="text-slate-400 font-mono">${t.time}</span>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
+
+        const waUrl = formatWaUrl(item.contact, item.name);
+        const contactBtnHtml = waUrl ? `
+          <a href="${waUrl}" target="_blank" class="inline-flex items-center gap-1 text-emerald-700 font-bold bg-emerald-100 hover:bg-emerald-200 px-2 py-0.5 rounded transition text-[11px] border border-emerald-300">
+            ${waSvgIcon} ${item.contact} (Chat WA)
+          </a>
+        ` : `<span class="font-medium text-slate-700">${item.contact || '-'}</span>`;
+
+        let cardBgClass = "bg-white border-slate-200";
+        let typeBadge = '';
+        let detailsGridHtml = '';
+        const isSchoolAsset = isItemSchoolAsset(item);
+
+        if (item.type === 'dibeli') {
+          cardBgClass = "bg-gradient-to-br from-white to-orange-50/30 border-orange-200";
+          typeBadge = `<span class="border border-orange-300 bg-orange-100 text-orange-900 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1"><i data-lucide="shopping-cart" class="w-3 h-3 text-orange-600"></i> BARANG BELI</span>`;
+          detailsGridHtml = `
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-orange-50/60 border border-orange-100 p-2.5 rounded-xl text-slate-600">
+              <div>
+                <span class="text-slate-400 block text-[10px] font-semibold uppercase">Tempat Belanja / Toko</span>
+                <p class="font-medium text-slate-800 flex items-center gap-1">
+                  <i data-lucide="store" class="w-3.5 h-3.5 text-orange-500"></i> ${item.origin}
+                </p>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px] font-semibold uppercase">Nominal / Harga Beli</span>
+                <p class="font-bold text-orange-700 flex items-center gap-1">
+                  <i data-lucide="banknote" class="w-3.5 h-3.5 text-orange-600"></i> ${formatRupiah(item.price)}
+                </p>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px] font-semibold uppercase">Lokasi Penaruhan / Simpan</span>
+                <p class="font-medium text-slate-700 flex items-center gap-1">
+                  <i data-lucide="box" class="w-3.5 h-3.5 text-slate-400"></i> ${item.return_location || 'Kotak Logistik'}
+                </p>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px] font-semibold uppercase">Kontak Toko / CS</span>
+                <div class="flex items-center gap-1 mt-0.5">${contactBtnHtml}</div>
+              </div>
+              ${takersListHtml}
+            </div>
+          `;
+        } else if (item.type === 'sewa') {
+          cardBgClass = "bg-gradient-to-br from-white to-purple-50/30 border-purple-200";
+          typeBadge = `<span class="border border-purple-300 bg-purple-100 text-purple-900 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1"><i data-lucide="repeat" class="w-3 h-3 text-purple-600"></i> BARANG SEWA</span>`;
+          detailsGridHtml = `
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-purple-50/60 border border-purple-100 p-2.5 rounded-xl text-slate-600">
+              <div>
+                <span class="text-slate-400 block text-[10px] font-semibold uppercase">Vendor Tempat Sewa</span>
+                <p class="font-medium text-slate-800 flex items-center gap-1">
+                  <i data-lucide="building-2" class="w-3.5 h-3.5 text-purple-500"></i> ${item.origin}
+                </p>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px] font-semibold uppercase">Biaya Sewa / Rental</span>
+                <p class="font-bold text-purple-700 flex items-center gap-1">
+                  <i data-lucide="coins" class="w-3.5 h-3.5 text-purple-600"></i> ${formatRupiah(item.price)}
+                </p>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px] font-semibold uppercase">Tenggat Pengembalian Sewa</span>
+                <p class="font-bold text-rose-600 flex items-center gap-1">
+                  <i data-lucide="calendar-clock" class="w-3.5 h-3.5 text-rose-500"></i> ${item.deadline || '-'}
+                </p>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px] font-semibold uppercase">Kontak Vendor Sewa (WA)</span>
+                <div class="flex items-center gap-1 mt-0.5">${contactBtnHtml}</div>
+              </div>
+              ${takersListHtml}
+            </div>
+          `;
+        } else {
+          cardBgClass = isSchoolAsset ? "bg-gradient-to-br from-white to-blue-50/40 border-blue-200" : "bg-white border-slate-200";
+          const schoolBadge = isSchoolAsset ? `<span class="border border-blue-300 bg-blue-100 text-blue-900 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1"><i data-lucide="school" class="w-3 h-3 text-blue-600"></i> ASET SEKOLAH</span>` : '';
+
+          typeBadge = `
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="border border-amber-300 bg-amber-50 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1"><i data-lucide="arrow-left-right" class="w-3 h-3 text-amber-600"></i> BARANG PINJAM</span>
+              ${schoolBadge}
+            </div>
+          `;
+
+          detailsGridHtml = `
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-xl text-slate-600">
+              <div>
+                <span class="text-slate-400 block text-[10px] font-semibold uppercase">Lokasi Asal / Pemilik</span>
+                <p class="font-medium text-slate-700 flex items-center gap-1">
+                  <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400"></i> ${item.origin}
+                </p>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px] font-semibold uppercase">Tenggat Pemakaian</span>
+                <p class="font-medium text-slate-700 flex items-center gap-1">
+                  <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i> ${item.deadline || '-'}
+                </p>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px] font-semibold uppercase">Lokasi Pengembalian</span>
+                <p class="font-medium ${item.return_location !== item.origin ? 'text-amber-800 font-bold' : 'text-slate-700'} flex items-center gap-1">
+                  <i data-lucide="navigation" class="w-3.5 h-3.5 text-slate-400"></i> ${item.return_location || '-'}
+                </p>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px] font-semibold uppercase">Kontak Pemilik (WA)</span>
+                <div class="flex items-center gap-1 mt-0.5">${contactBtnHtml}</div>
+              </div>
+              ${takersListHtml}
+            </div>
+          `;
+        }
 
         const card = document.createElement('div');
-        card.className = "bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition space-y-3";
+        card.className = `${cardBgClass} rounded-2xl border p-4 shadow-sm hover:shadow-md transition space-y-3`;
         card.innerHTML = `
           <div class="flex items-start justify-between gap-2">
             <div>
-              <div class="flex items-center gap-2 mb-1">
+              <div class="flex items-center gap-2 mb-1 flex-wrap">
                 ${typeBadge}
-                <span class="text-xs font-semibold text-slate-400">Qty: ${item.qty}</span>
-                ${item.deadline && item.deadline !== '-' ? `<span class="bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-semibold px-2 py-0.5 rounded flex items-center gap-1"><i data-lucide="timer" class="w-3 h-3"></i> ${item.deadline}</span>` : ''}
+                <span class="text-xs font-semibold text-slate-500">Qty: <b>${qtyTaken} / ${item.qty} Unit</b></span>
               </div>
               <h3 class="font-bold text-slate-800 text-base">${item.name}</h3>
             </div>
             <div>${statusBadge}</div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-xl text-slate-600">
-            <div>
-              <span class="text-slate-400 block text-[10px] font-semibold uppercase">${item.type === 'dipinjam' ? 'Lokasi Asal' : 'Tempat Beli'}</span>
-              <p class="font-medium text-slate-700 flex items-center gap-1">
-                <i data-lucide="map-pin" class="w-3 h-3 text-slate-400"></i> ${item.origin}
-              </p>
-            </div>
-            <div>
-              <span class="text-slate-400 block text-[10px] font-semibold uppercase">${item.type === 'dipinjam' ? 'Pengembalian' : 'Lokasi Penyimpanan'}</span>
-              <p class="font-medium ${item.return_location !== item.origin ? 'text-amber-800 font-bold' : 'text-slate-700'} flex items-center gap-1">
-                <i data-lucide="navigation" class="w-3 h-3 text-slate-400"></i> ${item.return_location || '-'}
-              </p>
-            </div>
-            <div class="sm:col-span-2 pt-1 border-t border-slate-200/60 flex items-center justify-between">
-              <span class="text-slate-500">PIC Penanggung Jawab: <b class="text-slate-900">${item.assigned_to || '-'}</b></span>
-              ${item.contact ? `<span class="text-slate-500">Kontak: <b>${item.contact}</b></span>` : ''}
-            </div>
-          </div>
+          ${detailsGridHtml}
 
           ${item.note || item.photo ? `
           <div class="text-xs bg-amber-50/50 border border-amber-200 p-2.5 rounded-xl space-y-2">
             ${item.note ? `<p class="text-slate-900"><b>Catatan:</b> ${item.note}</p>` : ''}
-            ${item.photo ? `<img src="${item.photo}" class="w-20 h-20 object-cover rounded-lg border border-amber-300" alt="Bukti">` : ''}
+            ${item.photo ? `<img src="${item.photo}" class="w-40 h-auto object-cover rounded-lg border border-amber-300 shadow-sm cursor-pointer" onclick="window.open('${item.photo}', '_blank')" alt="Bukti">` : ''}
           </div>` : ''}
 
           <div class="flex items-center justify-between pt-1 border-t border-slate-100">
@@ -1024,12 +2096,20 @@
 
     function renderLogs() {
       const container = document.getElementById('logList');
-      container.innerHTML = logs.map(l => `
-        <div class="py-1 flex items-start justify-between gap-2">
-          <span>${l.text}</span>
-          <span class="text-[10px] text-slate-400 shrink-0">${l.time}</span>
-        </div>
-      `).join('');
+      if (!logs || logs.length === 0) {
+        container.innerHTML = `<p class="text-center text-slate-400 py-3 italic">Belum ada aktivitas tercatat.</p>`;
+        return;
+      }
+
+      container.innerHTML = logs.map(l => {
+        const timeStr = l.created_at ? new Date(l.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+        return `
+          <div class="py-1.5 flex items-start justify-between gap-2">
+            <span><b>${l.user_name}</b>: ${l.action_text}</span>
+            <span class="text-[10px] text-slate-400 shrink-0 font-mono">${timeStr}</span>
+          </div>
+        `;
+      }).join('');
     }
   </script>
 </body>
